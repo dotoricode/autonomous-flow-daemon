@@ -1,1 +1,1 @@
-# ai-flow-doctor
+# Autonomous Flow Daemon (afd)

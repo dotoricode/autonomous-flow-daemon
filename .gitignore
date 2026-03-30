@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.afd/
+*.log
+.env
+nul/
+.afd-test-tmp/
