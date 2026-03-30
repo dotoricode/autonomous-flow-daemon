@@ -2,8 +2,8 @@
   <img src="https://capsule-render.vercel.app/api?type=soft&color=auto&height=200&section=header&text=afd&fontSize=90" alt="afd" />
 </p>
 
-<h3 align="center">Autonomous Flow Daemon</h3>
-<p align="center"><strong>AI가 스스로 치유하는 개발 환경. 270ms 안에 복구 완료.</strong></p>
+<h3 align="center">Autonomous Flow Daemon (afd)</h3>
+<p align="center"><strong>AI가 스스로 고치는 개발 환경. 복구까지 단 0.2초.</strong></p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/version-0.1.0-blue?style=flat-square" alt="version" />
@@ -14,223 +14,176 @@
 
 ---
 
-## 명령어 하나로 끝
+## 🚀 명령어 한 줄로 끝나는 경험
 
-> **설정 삽질 없음. 완전한 보호.**
+> **"더 이상의 설정 삽질은 없습니다. 완전한 방어 환경을 구축하세요."**
 
 ```bash
 npx @dotoricode/afd start
 ```
 
-또는 로컬 설치:
+로컬에 설치하여 사용하려면:
 
 ```bash
 bun link && afd start
 ```
 
-이게 전부입니다. `afd`가 알아서 합니다:
+이게 전부입니다. 나머지는 `afd`가 알아서 처리합니다:
 
-- **자동 주입** — Claude Code에 `PreToolUse` 훅을 자동으로 설치합니다. 설정 파일을 직접 만질 필요 없습니다.
-- **실시간 감시** — `.claude/`, `CLAUDE.md`, `.cursorrules` 등 핵심 설정 파일을 10ms 단위로 모니터링합니다.
-- **자동 치유** — 파일이 삭제되거나 깨지면 **S.E.A.M 사이클**이 백그라운드에서 조용히 복구합니다. 눈치챌 틈도 없습니다.
+- **자동 훅(Hook) 주입** — Claude Code의 `PreToolUse` 훅을 자동으로 설치합니다. 더 이상 `.json` 파일을 직접 수정하며 고생하지 마세요.
+- **초고속 실시간 감시** — `.claude/`, `CLAUDE.md`, `.cursorrules` 등 핵심 파일을 10ms 단위로 모니터링합니다.
+- **배경 자율 치유** — 파일이 삭제되거나 손상되면 **S.E.A.M 사이클**이 조용히 복구합니다. 사용자가 눈치채기도 전에 모든 상황은 종료됩니다.
 
 ```
 $ afd start
-  afd daemon started (pid 4812, port 52413)
-  Hook injected into .claude/hooks.json
-  Watching: .claude/, CLAUDE.md, .cursorrules
-  Ready.
+  🛡️ afd 데몬 시작 (pid 4812, port 52413)
+  ✅ .claude/hooks.json에 감시 훅 주입 완료
+  👀 감시 중: .claude/, CLAUDE.md, .cursorrules
+  ✨ 준비되었습니다.
 ```
 
-> `afd start`를 입력하고, 잊어버리세요. UX의 전부입니다.
+> `afd start`를 치고 나면 그냥 잊어버리세요. 그것이 우리가 추구하는 최고의 UX입니다.
 
 ---
 
-## S.E.A.M 사이클
+## 🧠 지능형 치유 엔진: S.E.A.M 사이클
 
-`afd`의 핵심 지능. 모든 파일 이벤트는 4단계를 거칩니다:
+`afd`의 핵심 로직입니다. 모든 파일 변화는 다음의 4단계를 거쳐 즉시 정제됩니다:
 
 ```mermaid
 graph LR
-    S["Sense<br/><i>파일 변경 감지</i>"] --> E["Extract<br/><i>증상 검출</i>"]
+    S["Sense<br/><i>변경 감지</i>"] --> E["Extract<br/><i>증상 분석</i>"]
     E --> A["Adapt<br/><i>항체 선택</i>"]
-    A --> M["Mutate<br/><i>JSON-Patch 적용</i>"]
-    M -->|"학습"| S
+    A --> M["Mutate<br/><i>치유/복구</i>"]
+    M -->|"자가 학습"| S
     style S fill:#3b82f6,color:#fff,stroke:none
     style E fill:#f59e0b,color:#fff,stroke:none
     style A fill:#10b981,color:#fff,stroke:none
     style M fill:#ef4444,color:#fff,stroke:none
 ```
 
-| 단계 | 동작 | 속도 |
+| 단계 | 주요 동작 | 처리 속도 |
 |:------|:-----|:-----|
-| **Sense** | Chokidar가 `add`, `change`, `unlink` 이벤트 감지 | < 10ms |
-| **Extract** | 면역 엔진이 3개 내장 건강 검진 실행 (IMM-001..003) | < 5ms |
-| **Adapt** | SQLite(WAL 모드)에서 저장된 항체와 매칭 | < 1ms |
-| **Mutate** | RFC 6902 JSON-Patch로 파일 복원 | < 25ms |
+| **Sense** | Chokidar 와처가 파일의 생성, 변경, 삭제를 즉각 감지 | < 10ms |
+| **Extract** | 면역 엔진이 내장된 3단계 건강 검진 실행 (IMM-001..003) | < 5ms |
+| **Adapt** | SQLite(WAL 모드) DB에서 최적의 복구 항체(Antibody) 매칭 | < 1ms |
+| **Mutate** | RFC 6902 JSON-Patch 기술로 원본 파일을 완벽히 복원 | < 25ms |
 
-> 전체 사이클: 파일 삭제부터 완전 복구까지 **270ms 미만**.
+> **최종 성적표:** 파일 삭제 감지부터 복구 완료까지 **270ms 미만**.
 
 ---
 
-## Magic 5 — 다섯 개의 명령어
+## 🛠️ Magic 5 — 핵심 명령어
 
-필요한 건 전부, 불필요한 건 없음.
+복잡한 건 빼고, 꼭 필요한 5가지만 담았습니다.
 
-| 명령어 | 본질 | 내부 지능 |
+| 명령어 | 역할 | 핵심 지능 |
 |:-------|:-----|:----------|
-| `afd start` | **점화** | 데몬 생성 + 훅 자동 주입 |
-| `afd fix` | **진단** | 증상 검출 & 항체 학습 |
-| `afd score` | **생체 신호** | 건강 대시보드 & 자동 치유 통계 |
-| `afd sync` | **연합** | 백신 페이로드 내보내기 (팀 전파용) |
-| `afd stop` | **격리** | 안전한 종료 & 정리 |
-
-### 빠른 참조
-
-```bash
-afd start      # 데몬 시작, 훅 주입, 감시 시작
-afd fix        # 이슈 스캔, 자동 패치, 항체 학습
-afd score      # 전체 진단 대시보드
-afd sync       # 항체를 .afd/global-vaccine-payload.json으로 내보내기
-afd stop       # 안전한 종료
-```
+| `afd start` | **시동** | 백그라운드 데몬 가동 및 자동 훅 주입 |
+| `afd fix` | **수술** | 현재 프로젝트 진단 및 새로운 항체 학습 |
+| `afd score` | **대시보드** | 프로젝트 건강 점수 및 치유 통계 확인 |
+| `afd sync` | **전파** | 학습된 항체를 백신 파일로 추출 (팀 공유용) |
+| `afd stop` | **종료** | 데몬을 안전하게 끄고 프로세스 정리 |
 
 ---
 
-## 대시보드: `afd score`
+## 📊 실시간 대시보드: `afd score`
 
 ```
 ┌──────────────────────────────────────────────┐
-│  afd score — Daemon Diagnostics              │
+│  afd score — 프로젝트 건강 검진 리포트            │
 ├──────────────────────────────────────────────┤
-│  Ecosystem    : Claude Code                  │
+│  에코시스템    : Claude Code                  │
 ├──────────────────────────────────────────────┤
-│  Uptime       : 1h 23m                       │
-│  Events       : 156                          │
-│  Files Found  : 8                            │
+│  가동 시간     : 1시간 23분                    │
+│  감지된 이벤트 : 156건                         │
+│  보호 중인 파일: 8개                          │
 ├──────────────────────────────────────────────┤
-│  면역 시스템                                   │
+│  면역 시스템 상태 (Immune System)               │
 │  ──────────────────────────────              │
-│  항체          : 7개                          │
-│  레벨          : Fortified                    │
-│  자동 치유     : 3건                           │
-│  마지막 치유   : IMM-003 (12분 전)             │
+│  보유 항체     : 7개                          │
+│  방어 레벨     : 철통 보안 (Fortified)          │
+│  자동 치유     : 3건 (백그라운드 처리)           │
+│  최근 치유     : IMM-003 (.claudeignore 복구)   │
 ├──────────────────────────────────────────────┤
-│  억제 안전장치                                 │
+│  억제 안전장치 (Safety)                        │
 │  ──────────────────────────────              │
-│  Mass event 무시  : 2건                       │
-│  Dormant 전환     : 0건                       │
-│  활성 First-tap   : 1건                       │
+│  대규모 이벤트 무시: 2건 (git checkout 등)      │
+│  의도적 삭제 허용  : 0건 (Dormant 전환)         │
 ├──────────────────────────────────────────────┤
-│  Hologram 절약   : 토큰 84% 절감              │
+│  Hologram 절약   : 토큰 소모량 84% 감소         │
 └──────────────────────────────────────────────┘
 ```
 
 ---
 
-## 고급 지능
+## 💎 고도로 설계된 안전 장치
 
-### Double-Tap 휴리스틱 (면역 관용)
+### Double-Tap 휴리스틱 (의도와 실수의 구분)
 
-`afd`는 **실수**와 **의도**를 구분합니다:
+`afd`는 바보처럼 무조건 되살리지 않습니다. 사용자의 **진짜 의도**를 읽습니다:
 
+```bash
+$rm .claudeignore      # 1차 삭제: "실수인가 보군." -> 즉시 복구$ rm .claudeignore      # 60초 내 재삭제: "진짜 지우고 싶구나?" 
+  🛡️ [afd] 사용자 의도 확인. 항체 IMM-001 휴면 전환. 삭제를 존중합니다.
 ```
-$ rm .claudeignore            # 첫 번째 삭제 → afd가 조용히 복구
-$ rm .claudeignore            # 60초 내 재삭제 → "진짜 지우려는 거구나"
-  [afd] Antibody IMM-001 → dormant. 삭제를 존중합니다.
-```
 
-| 시나리오 | 반응 |
-|:---------|:-----|
-| 1회 삭제 (실수) | 자동 복구 + First tap 기록 |
-| 60초 내 재삭제 (의도) | 항체 비활성화, 삭제 존중 |
-| 60초 후 재삭제 | 새로운 First tap으로 취급, 다시 복구 |
-| 1초 내 3건 이상 삭제 (git checkout 등) | Mass-event 감지, 면역 시스템 일시 중단 |
+- **실수 방어:** 한 번의 삭제는 0.2초 만에 즉시 복구합니다.
+- **의도 존중:** 1분 내에 같은 파일을 또 지우면 사용자의 확고한 의지로 판단해 복구를 멈춥니다.
+- **Git 쇼크 방지:** `git checkout`처럼 수많은 파일이 한꺼번에 바뀌는 상황(1초 내 3개 이상)은 '대규모 이벤트'로 자동 인식하여 과도한 치유 동작을 멈춥니다.
 
-> 설정 파일을 실수로 날려도, `afd`가 270ms 안에 살려놓습니다.
-> 진짜로 지우고 싶으면, 두 번 지우세요. `afd`는 당신의 의도를 존중합니다.
+### 백신 네트워크 (팀 전파)
 
-### 백신 네트워크 (팀 연합)
-
-학습된 항체를 팀 전체에 공유합니다:
+나만 똑똑해지는 게 아닙니다. 내가 발견한 해결책을 팀원 모두에게 전파하세요:
 
 ```bash
 afd sync
-# → .afd/global-vaccine-payload.json
+# → .afd/global-vaccine-payload.json 생성
 ```
+이 파일은 정제되어 있어 기밀 정보가 섞이지 않습니다. 다른 프로젝트에 넣기만 하면 `afd`가 해당 프로젝트의 면역력을 즉시 이식받습니다.
 
-페이로드는 정제되어 있습니다 (절대 경로 없음, 시크릿 없음). 다른 프로젝트에 넣으면 면역력을 그대로 이어받습니다.
+### Hologram 추출 (토큰 다이어트)
 
-### Hologram 추출
-
-AI 에이전트가 파일 컨텍스트를 요청하면, `afd`는 **토큰 효율적 뼈대**를 제공합니다 — 주석과 함수 본문을 제거하고 타입 시그니처만 보존합니다:
-
-```
-원본: 2,450자 → Hologram: 380자 (84% 절감)
-```
-
-AI 에이전트의 컨텍스트 윈도우를 날씬하게 유지하면서, 구조적 이해력은 그대로 보존합니다.
+AI 에이전트가 파일 내용을 요구할 때, `afd`는 **뼈대만 남긴 초경량 요약본**을 제공합니다. 주석과 긴 함수 본문은 걷어내고 타입 정의와 구조만 전달하여 **토큰 비용을 80% 이상 절감**합니다.
 
 ---
 
-## 상태줄 (Status Line)
+## 🛠️ 기술 스택
 
-Claude Code 상태바에서 데몬 상태를 실시간으로 확인:
-
-```
-🛡️ afd: OFF                              # 데몬 꺼짐
-🛡️ afd: ON                               # 실행 중, 치유 없음
-🛡️ afd: ON 🩹1                            # 자동 치유 1건
-🛡️ afd: ON | 🩹 3 Healed | last: IMM-003  # 상세 보기
-```
+- **Runtime**: **Bun** — 초고속 실행 속도와 네이티브 SQLite 지원.
+- **Database**: **SQLite (WAL)** — 읽기 0.29ms의 압도적 성능과 크래시 안전성.
+- **Patching**: **RFC 6902 JSON-Patch** — 파일의 미세한 변화를 가장 정교하게 복원하는 기술.
 
 ---
 
-## 기술 스택
-
-| 레이어 | 기술 | 이유 |
-|:-------|:-----|:-----|
-| 런타임 | **Bun** | 네이티브 TypeScript, 빠른 SQLite, 싱글 바이너리 |
-| 데이터베이스 | **Bun SQLite (WAL)** | 읽기 0.29ms, 쓰기 24ms, 크래시 안전 |
-| 파일 감시 | **Chokidar** | 크로스 플랫폼, 검증된 파일 와처 |
-| 패치 | **RFC 6902 JSON-Patch** | 결정론적, 조합 가능한 파일 변이 |
-| CLI | **Commander.js** | 표준적이고 예측 가능한 명령어 파싱 |
-
----
-
-## 설치
+## 📦 설치 및 시작하기
 
 ```bash
-# Bun으로 설치 (권장)
+# Bun 사용 권장
 bun install
 bun link
 afd start
 
-# npx로 바로 실행 (설치 불필요)
+# 설치 없이 바로 실행하기 (npx)
 npx @dotoricode/afd start
 ```
 
-### 요구 사항
-
+### 환경 요구 사항
 - **Bun** >= 1.0
-- **OS**: Windows, macOS, Linux
-- **대상**: Claude Code, Cursor (생태계 자동 감지)
+- **OS**: Windows, macOS, Linux 지원
+- **호환 환경**: Claude Code, Cursor 등 (생태계 자동 감지)
 
 ---
 
-## 안도감을 주는 UX
+## 🛡️ 안도감을 주는 UX
 
-`afd`의 디자인 철학은 단순합니다:
+`afd`의 목표는 명확합니다.
 
-> **"설정 삽질을 원천 차단하고, AI가 스스로 치유하는 프로젝트를 만든다."**
+> **"설정 파일 하나 날아가서 30분을 허비하는 그런 날은 이제 끝났습니다."**
 
-설정 파일이 날아가서 30분을 허비한 경험. `git checkout` 한 번에 훅이 증발한 경험. `afd`는 그런 순간이 다시 오지 않도록 백그라운드에서 묵묵히 지켜줍니다.
-
-당신은 코드에만 집중하세요. 나머지는 `afd`가 합니다.
+당신은 코드에만 집중하세요. 프로젝트 환경의 건강은 `afd`가 24시간 백그라운드에서 지켜드립니다.
 
 ---
 
 ## 라이선스
-
 MIT
-
