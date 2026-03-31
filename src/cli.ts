@@ -12,7 +12,7 @@ const program = new Command();
 program
   .name("afd")
   .description("Autonomous Flow Daemon - The Immune System for AI Workflows")
-  .version("0.1.0");
+  .version("1.0.0");
 
 program
   .command("start")

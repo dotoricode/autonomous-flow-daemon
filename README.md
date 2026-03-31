@@ -18,6 +18,23 @@
 
 ---
 
+## Why afd?
+
+> [afd] 🛡️ AI agent deleted '.claudeignore' | 🩹 Self-healed in 184ms | Context preserved.
+
+You're deep in flow. Your AI agent makes a wrong move — deletes a config, corrupts a hook file, wipes a `.cursorrules`. Without `afd`, you stop everything, diagnose the breakage, manually fix it: **30 minutes gone**.
+
+With `afd`, the daemon noticed in 10ms, restored the file in 184ms, and logged it silently. **You never even saw it happen.**
+
+| Situation | Without afd | With afd |
+|:----------|:------------|:---------|
+| AI deletes `.claudeignore` | 30 min manual fix | **0.2s auto-heal** |
+| Hook file corrupted | Re-inject hooks, restart session | **Silent background repair** |
+| `git checkout` triggers 50 file events | AI goes haywire | **Mass-event suppressor kicks in** |
+| New team member, missing context | Tribal knowledge required | **`afd sync` vaccines the setup** |
+
+---
+
 ## The One-Command Experience
 
 > **Zero-Config. Total Protection.**
@@ -183,6 +200,45 @@ Real-time daemon status in Claude Code's status bar:
 🛡️ afd: ON                               # Running, no heals
 🛡️ afd: ON 🩹1                            # 1 auto-heal event
 🛡️ afd: ON | 🩹 3 Healed | last: IMM-003  # Detailed view
+```
+
+---
+
+## Plugin / MCP Setup
+
+`afd` can be registered as a **Model Context Protocol (MCP) server** inside Claude Code, allowing the daemon to start automatically when Claude Code launches.
+
+### Automatic (recommended)
+
+Add to your Claude Code MCP config (`~/.claude/mcp.json` or project-level `.mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "afd": {
+      "command": "bun",
+      "args": ["run", "src/cli.ts", "start"]
+    }
+  }
+}
+```
+
+Or copy the included manifest directly:
+
+```bash
+cp mcp-config.json .mcp.json
+```
+
+### Manual
+
+```bash
+afd start   # starts daemon in background, injects hooks
+```
+
+Once registered, Claude Code will display the live status line:
+
+```
+🛡️ afd: ON | 🩹 3 Healed | last: IMM-003
 ```
 
 ---

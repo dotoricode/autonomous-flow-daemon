@@ -1,12 +1,30 @@
 {
   "name": "autonomous-flow-daemon",
   "version": "1.0.0",
-  "description": "The Autonomous Immune System for AI Coding Workflows",
+  "description": "Zero-config immunity for AI coding workflows. Self-heals broken configs in < 270ms.",
   "type": "module",
   "bin": {
     "afd": "./src/cli.ts"
   },
   "main": "./src/cli.ts",
+  "files": [
+    "src/**/*.ts",
+    "mcp-config.json",
+    "README.md",
+    "README.ko.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "claude-code",
+    "self-healing",
+    "mcp",
+    "bun",
+    "ai-workflow",
+    "daemon",
+    "autonomous",
+    "dev-tools"
+  ],
   "scripts": {
     "start": "bun run src/cli.ts start",
     "dev": "bun run src/cli.ts",

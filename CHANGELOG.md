@@ -9,6 +9,10 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ## [1.0.0] - 2026-03-31 — "The Immortal Flow"
 
+> [afd] 🛡️ AI agent deleted '.claudeignore' | 🩹 Self-healed in 184ms | Context preserved.
+
+**Zero-config immunity for your AI development flow.**
+
 ### Phase 1–3: Core S.E.A.M Engine & Magic 5 Commands
 
 - Introduced the **S.E.A.M Cycle** (Scan → Evaluate → Act → Monitor) as the central execution loop

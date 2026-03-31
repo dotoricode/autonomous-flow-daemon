@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "afd": {
+      "command": "bun",
+      "args": ["run", "src/cli.ts", "start"],
+      "description": "Autonomous Flow Daemon — self-healing AI development environment guardian. Monitors critical config files and auto-restores them within 270ms.",
+      "env": {}
+    }
+  }
+}
