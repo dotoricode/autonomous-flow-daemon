@@ -45,6 +45,8 @@ export interface MessageDict {
   SCORE_HOLOGRAM_EFFICIENCY: string;
   SCORE_HOLOGRAM_EMPTY: string;
   SCORE_HOLOGRAM_HINT: string;
+  SCORE_HOLOGRAM_TODAY: string;
+  SCORE_HOLOGRAM_LIFETIME: string;
   SCORE_IMMUNE_TITLE: string;
   SCORE_ANTIBODIES: string;
   SCORE_LEVEL: string;
@@ -133,6 +135,8 @@ const en: MessageDict = {
   SCORE_HOLOGRAM_EFFICIENCY: "Efficiency",
   SCORE_HOLOGRAM_EMPTY: "No hologram requests yet.",
   SCORE_HOLOGRAM_HINT: "Use: GET /hologram?file=<path>",
+  SCORE_HOLOGRAM_TODAY: "Today",
+  SCORE_HOLOGRAM_LIFETIME: "All-time",
   SCORE_IMMUNE_TITLE: "Immune System",
   SCORE_ANTIBODIES: "Antibodies",
   SCORE_LEVEL: "Level",
@@ -217,6 +221,8 @@ const ko: MessageDict = {
   SCORE_HOLOGRAM_EFFICIENCY: "압축 효율",
   SCORE_HOLOGRAM_EMPTY: "아직 홀로그램 요청이 없습니다.",
   SCORE_HOLOGRAM_HINT: "사용법: GET /hologram?file=<경로>",
+  SCORE_HOLOGRAM_TODAY: "오늘",
+  SCORE_HOLOGRAM_LIFETIME: "누적",
   SCORE_IMMUNE_TITLE: "면역 시스템",
   SCORE_ANTIBODIES: "항체 수",
   SCORE_LEVEL: "방어 레벨",

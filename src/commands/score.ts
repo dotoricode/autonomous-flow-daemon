@@ -4,11 +4,24 @@ import type { ShiftSummary } from "../core/boast";
 import { getSystemLanguage } from "../core/locale";
 import { getMessages, t } from "../core/i18n/messages";
 
-interface HologramScore {
+interface HologramEntry {
   requests: number;
   originalChars: number;
   hologramChars: number;
   savings: number;
+}
+
+interface HologramDailyRow {
+  date: string;
+  requests: number;
+  originalChars: number;
+  hologramChars: number;
+}
+
+interface HologramScore {
+  lifetime: HologramEntry;
+  today: HologramEntry | null;
+  daily: HologramDailyRow[];
 }
 
 interface AutoHealEntry {
@@ -123,13 +136,17 @@ export async function scoreCommand() {
     console.log(`\u251C${line}\u2524`);
     console.log(row(`  ${i18n.SCORE_HOLOGRAM_TITLE}`));
     console.log(row(`  ${sep}`));
-    if (h.requests > 0) {
-      const saved = h.originalChars - h.hologramChars;
-      console.log(kv(i18n.SCORE_HOLOGRAM_REQUESTS, String(h.requests)));
-      console.log(kv(i18n.SCORE_HOLOGRAM_ORIGINAL, `${formatChars(h.originalChars)} chars`));
-      console.log(kv(i18n.SCORE_HOLOGRAM_COMPRESSED, `${formatChars(h.hologramChars)} chars`));
-      console.log(kv(i18n.SCORE_HOLOGRAM_SAVED, `${formatChars(saved)} chars (${h.savings}%)`));
-      console.log(row(`  ${vwPad(i18n.SCORE_HOLOGRAM_EFFICIENCY, 10)}${heatBar(h.savings, 100)}`));
+    const lt = h.lifetime;
+    if (lt.requests > 0) {
+      // Today stats (if available)
+      if (h.today && h.today.requests > 0) {
+        const todaySaved = h.today.originalChars - h.today.hologramChars;
+        console.log(kv(`${i18n.SCORE_HOLOGRAM_TODAY}`, `${h.today.requests} req / ${formatChars(todaySaved)} saved (${h.today.savings}%)`));
+      }
+      // Lifetime stats
+      const ltSaved = lt.originalChars - lt.hologramChars;
+      console.log(kv(`${i18n.SCORE_HOLOGRAM_LIFETIME}`, `${lt.requests} req / ${formatChars(ltSaved)} saved (${lt.savings}%)`));
+      console.log(row(`  ${vwPad(i18n.SCORE_HOLOGRAM_EFFICIENCY, 10)}${heatBar(lt.savings, 100)}`));
     } else {
       console.log(row(`  ${i18n.SCORE_HOLOGRAM_EMPTY}`));
       console.log(row(`  ${i18n.SCORE_HOLOGRAM_HINT}`));
