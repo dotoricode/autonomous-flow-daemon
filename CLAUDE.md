@@ -33,7 +33,15 @@ Completely overwrite the contents of the current `CLAUDE.md` with the new archit
 - **Never Full-Text:** When analyzing the full context of a file or passing it to another agent, absolutely never pass the raw, full-text source code.
 - **Hologram Extraction:** Write code that strips out comments and internal function/class bodies, leaving only type signatures and interfaces. Extract this **"Hologram" (skeleton)** to reduce token waste by over 80%.
 
-## 5. Git Configuration & Contribution Workflow
+## 5. Documentation Structure
+- **`docs/architecture.md`** — System architecture, module map, S.E.A.M cycle, IPC strategy
+- **`docs/mcp-planning.md`** — MCP stdio integration design and rollout plan
+- **`docs/cli-reference.md`** — Complete CLI command reference
+- **`docs/roadmap.md`** — Version-based roadmap and future plans
+- **`docs/04-*`, `docs/05-*`, `docs/06-*`** — Historical audit documents
+- When writing or updating project documentation, place it in `docs/` under the appropriate file. Do not create standalone markdown files in the project root for documentation purposes.
+
+## 6. Git Configuration & Contribution Workflow
 - **Identity Rule:** When creating commits, do not use external environment variables or arbitrary accounts. You must use the user information configured locally in the project (`.git/config`).
 - **Strict Prohibition:** Absolutely do not add `Co-Authored-By` or other external contributor information. Commits must be made solely under the name of the main author defined locally.
 - **Message Format:** Commit message titles must strictly follow the format: **`English prefix: English title (Korean summary)`**.

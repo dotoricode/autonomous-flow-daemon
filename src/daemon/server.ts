@@ -11,6 +11,7 @@ import type { DetectionResult } from "../adapters/index";
 import { calcHealMetrics, maybeHealBoast, formatHealLog, formatDormantLog, buildShiftSummary } from "../core/boast";
 import { discoverWatchTargets } from "../core/discovery";
 import { formatTimestamp, lineDiff } from "../core/log-utils";
+import { LruStringMap } from "../core/lru-map";
 
 // ── Suppression Safety Constants ──
 const DOUBLE_TAP_WINDOW_MS = 30_000;  // 30 seconds — balances demo speed and production safety
@@ -40,8 +41,8 @@ interface DaemonState {
   suppressionSkippedCount: number;
   dormantTransitions: { antibodyId: string; at: number }[];
   totalFileBytesSaved: number;
-  /** In-memory snapshot of watched file contents for diff on change */
-  fileSnapshots: Map<string, string>;
+  /** In-memory snapshot of watched file contents for diff on change (LRU, 10MB cap) */
+  fileSnapshots: LruStringMap;
 }
 
 const state: DaemonState = {
@@ -59,7 +60,7 @@ const state: DaemonState = {
   suppressionSkippedCount: 0,
   dormantTransitions: [],
   totalFileBytesSaved: 0,
-  fileSnapshots: new Map(),
+  fileSnapshots: new LruStringMap(10 * 1024 * 1024), // 10 MB cap
 };
 
 function cleanup() {
@@ -88,8 +89,10 @@ export function main(options: DaemonOptions = {}) {
   const setAntibodyDormant = db.prepare("UPDATE antibodies SET dormant = 1 WHERE id = ?");
 
   // ── S.E.A.M Cycle Logger ──
+  // In MCP mode, use stderr to keep stdout clean for JSON-RPC protocol
+  const log = options.mcp ? console.error.bind(console) : console.log.bind(console);
   function seam(phase: string, msg: string) {
-    console.log(`[${formatTimestamp()}] [afd] [${phase}] ${msg}`);
+    log(`[${formatTimestamp()}] [afd] [${phase}] ${msg}`);
   }
 
   /** Snapshot a file's content into memory for future diff */
@@ -161,7 +164,7 @@ export function main(options: DaemonOptions = {}) {
       const metrics = calcHealMetrics(bytesWritten, healMs);
       const boast = maybeHealBoast(5); // 1-in-5 chance
       const fileName = fileTarget.split("/").pop() ?? fileTarget;
-      console.log(formatHealLog(fileName, metrics, boast));
+      log(formatHealLog(fileName, metrics, boast));
     } catch (err) {
       seam("Mutate", `FAILED to restore ${fileTarget}: ${err instanceof Error ? err.message : String(err)}`);
     }
@@ -205,7 +208,7 @@ export function main(options: DaemonOptions = {}) {
       setAntibodyDormant.run(antibody.id);
       state.firstTapTimestamps.delete(filePath);
       state.dormantTransitions.push({ antibodyId: antibody.id, at: now });
-      console.log(formatDormantLog(antibody.id));
+      log(formatDormantLog(antibody.id));
       return "dormant";
     }
 
@@ -310,27 +313,153 @@ export function main(options: DaemonOptions = {}) {
   // ── MCP stdio mode: JSON-RPC over stdin/stdout ──
   if (options.mcp) {
     console.error("[afd] MCP stdio mode — awaiting JSON-RPC on stdin");
-    (async () => {
-      const decoder = new TextDecoder();
-      for await (const chunk of Bun.stdin.stream()) {
-        const line = decoder.decode(chunk).trim();
-        if (!line) continue;
-        try {
-          const req = JSON.parse(line);
-          const response = {
-            jsonrpc: "2.0",
-            id: req.id,
-            result: {
-              tools: [
-                { name: "afd_diagnose", description: "Run afd health diagnosis" },
-                { name: "afd_score", description: "Get daemon score/stats" },
-                { name: "afd_hologram", description: "Generate hologram for a file" },
-              ],
+
+    const mcpToolDefs = [
+      {
+        name: "afd_diagnose",
+        description: "Run health diagnosis on the current project. Returns symptoms and healthy checks.",
+        inputSchema: {
+          type: "object" as const,
+          properties: {
+            raw: { type: "boolean" as const, description: "If true, report all symptoms ignoring antibodies" },
+          },
+        },
+      },
+      {
+        name: "afd_score",
+        description: "Get daemon runtime stats: uptime, events, heals, hologram savings, suppression metrics.",
+        inputSchema: { type: "object" as const, properties: {} },
+      },
+      {
+        name: "afd_hologram",
+        description: "Generate a token-efficient hologram (type skeleton) for a TypeScript file.",
+        inputSchema: {
+          type: "object" as const,
+          properties: {
+            file: { type: "string" as const, description: "Relative or absolute file path" },
+          },
+          required: ["file"],
+        },
+      },
+    ];
+
+    function mcpResponse(id: unknown, result: unknown) {
+      process.stdout.write(JSON.stringify({ jsonrpc: "2.0", id, result }) + "\n");
+    }
+
+    function mcpError(id: unknown, code: number, message: string) {
+      process.stdout.write(JSON.stringify({ jsonrpc: "2.0", id, error: { code, message } }) + "\n");
+    }
+
+    function handleMcpRequest(req: { id?: unknown; method?: string; params?: Record<string, unknown> }) {
+      const { id, method, params } = req;
+
+      // ── initialize ──
+      if (method === "initialize") {
+        mcpResponse(id, {
+          protocolVersion: "2024-11-05",
+          capabilities: { tools: {} },
+          serverInfo: { name: "afd", version: "1.2.0" },
+        });
+        return;
+      }
+
+      // ── notifications (no response needed) ──
+      if (method === "notifications/initialized") return;
+
+      // ── tools/list ──
+      if (method === "tools/list") {
+        mcpResponse(id, { tools: mcpToolDefs });
+        return;
+      }
+
+      // ── tools/call ──
+      if (method === "tools/call") {
+        const toolName = params?.name as string | undefined;
+        const args = (params?.arguments ?? {}) as Record<string, unknown>;
+
+        if (toolName === "afd_diagnose") {
+          const raw = args.raw === true;
+          const known = (antibodyIds.all() as { id: string }[]).map(r => r.id);
+          const result = diagnose(known, { raw });
+          mcpResponse(id, {
+            content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+          });
+          return;
+        }
+
+        if (toolName === "afd_score") {
+          const uptime = Math.floor((Date.now() - state.startedAt) / 1000);
+          const eventCount = db.query("SELECT COUNT(*) as cnt FROM events").get() as { cnt: number };
+          const abCount = countAntibodies.get() as { cnt: number };
+          const hs = state.hologramStats;
+          const result = {
+            uptime,
+            filesDetected: state.filesDetected,
+            totalEvents: eventCount.cnt,
+            antibodies: abCount.cnt,
+            autoHealed: state.autoHealCount,
+            hologramRequests: hs.totalRequests,
+            hologramSavings: hs.totalOriginalChars > 0
+              ? `${Math.round((hs.totalOriginalChars - hs.totalHologramChars) / hs.totalOriginalChars * 100)}%`
+              : "0%",
+            suppression: {
+              massEventsSkipped: state.suppressionSkippedCount,
+              dormantTransitions: state.dormantTransitions.length,
             },
           };
-          process.stdout.write(JSON.stringify(response) + "\n");
-        } catch {
-          // Crash-only: malformed input is ignored
+          mcpResponse(id, {
+            content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+          });
+          return;
+        }
+
+        if (toolName === "afd_hologram") {
+          const file = args.file as string | undefined;
+          if (!file) {
+            mcpError(id, -32602, "Missing required argument: file");
+            return;
+          }
+          try {
+            const absPath = resolve(file);
+            const source = readFileSync(absPath, "utf-8");
+            const result = generateHologram(file, source);
+            state.hologramStats.totalRequests++;
+            state.hologramStats.totalOriginalChars += result.originalLength;
+            state.hologramStats.totalHologramChars += result.hologramLength;
+            mcpResponse(id, {
+              content: [{ type: "text", text: result.hologram }],
+            });
+          } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : String(err);
+            mcpError(id, -32603, msg);
+          }
+          return;
+        }
+
+        mcpError(id, -32601, `Unknown tool: ${toolName}`);
+        return;
+      }
+
+      mcpError(id, -32601, `Unknown method: ${method}`);
+    }
+
+    (async () => {
+      const decoder = new TextDecoder();
+      let buffer = "";
+      for await (const chunk of Bun.stdin.stream()) {
+        buffer += decoder.decode(chunk);
+        // Process all complete lines in buffer
+        let newlineIdx: number;
+        while ((newlineIdx = buffer.indexOf("\n")) !== -1) {
+          const line = buffer.slice(0, newlineIdx).trim();
+          buffer = buffer.slice(newlineIdx + 1);
+          if (!line) continue;
+          try {
+            handleMcpRequest(JSON.parse(line));
+          } catch {
+            // Crash-only: malformed JSON is ignored
+          }
         }
       }
     })();
@@ -550,5 +679,6 @@ export function main(options: DaemonOptions = {}) {
 
 // Auto-execute when run directly (not imported)
 if (import.meta.main) {
-  main();
+  const mcp = process.argv.includes("--mcp") || process.env.AFD_MCP === "1";
+  main({ mcp });
 }

@@ -26,6 +26,15 @@ export function notifyAutoHeal(patternId: string): void {
   }
 }
 
+function safeSpawn(cmd: string, args: string[], opts: Record<string, unknown> = {}): void {
+  try {
+    const child = spawn(cmd, args, { detached: true, stdio: "ignore", ...opts });
+    child.unref();
+  } catch {
+    // Binary not found or spawn failed — silently ignore
+  }
+}
+
 function notifyWindows(title: string, body: string): void {
   const ps = `
     Add-Type -AssemblyName System.Windows.Forms
@@ -40,27 +49,14 @@ function notifyWindows(title: string, body: string): void {
     $n.Dispose()
   `.replace(/\n\s*/g, " ");
 
-  const child = spawn("powershell", ["-NoProfile", "-NonInteractive", "-Command", ps], {
-    detached: true,
-    stdio: "ignore",
-    windowsHide: true,
-  });
-  child.unref();
+  safeSpawn("powershell", ["-NoProfile", "-NonInteractive", "-Command", ps], { windowsHide: true });
 }
 
 function notifyMacOS(title: string, body: string): void {
   const script = `display notification "${body}" with title "${title}"`;
-  const child = spawn("osascript", ["-e", script], {
-    detached: true,
-    stdio: "ignore",
-  });
-  child.unref();
+  safeSpawn("osascript", ["-e", script]);
 }
 
 function notifyLinux(title: string, body: string): void {
-  const child = spawn("notify-send", [title, body, "--icon=dialog-information"], {
-    detached: true,
-    stdio: "ignore",
-  });
-  child.unref();
+  safeSpawn("notify-send", [title, body, "--icon=dialog-information"]);
 }
