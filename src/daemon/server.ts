@@ -152,9 +152,17 @@ export function main(options: DaemonOptions = {}) {
 
   // ── S.E.A.M Cycle Logger ──
   // In MCP mode, use stderr to keep stdout clean for JSON-RPC protocol
+  const GUARD_LINE = "========== GUARDED ==========";
+  const GUARD_PHASES = new Set(["Mutate", "Quarantine"]);
   const log = options.mcp ? console.error.bind(console) : console.log.bind(console);
   function seam(phase: string, msg: string) {
-    log(`[${formatTimestamp()}] [afd] [${phase}] ${msg}`);
+    if (GUARD_PHASES.has(phase)) {
+      log(`\n${GUARD_LINE}`);
+      log(`[${formatTimestamp()}] [afd] [${phase}] ${msg}`);
+      log(`${GUARD_LINE}\n`);
+    } else {
+      log(`[${formatTimestamp()}] [afd] [${phase}] ${msg}`);
+    }
     // Broadcast to SSE clients
     const encoder = new TextEncoder();
     const payload = JSON.stringify({ phase, msg, ts: Date.now() });

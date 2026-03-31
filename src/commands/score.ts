@@ -65,6 +65,23 @@ interface ScoreData {
   suppression: SuppressionScore;
 }
 
+// ── ANSI helpers ──
+const C = {
+  reset: "\x1b[0m",
+  bold: "\x1b[1m",
+  dim: "\x1b[2m",
+  red: "\x1b[31m",
+  green: "\x1b[32m",
+  yellow: "\x1b[33m",
+  blue: "\x1b[34m",
+  magenta: "\x1b[35m",
+  cyan: "\x1b[36m",
+  white: "\x1b[37m",
+  bgRed: "\x1b[41m",
+  bgGreen: "\x1b[42m",
+  bgYellow: "\x1b[43m",
+};
+
 function formatUptime(seconds: number): string {
   if (seconds < 60) return `${seconds}s`;
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
@@ -73,9 +90,13 @@ function formatUptime(seconds: number): string {
   return `${h}h ${m}m`;
 }
 
-function heatBar(value: number, max: number, width = 20): string {
-  const filled = Math.min(Math.round((value / Math.max(max, 1)) * width), width);
-  return "\u2588".repeat(filled) + "\u2591".repeat(width - filled);
+function gaugeBar(value: number, max: number, width = 20): string {
+  const ratio = Math.min(value / Math.max(max, 1), 1);
+  const filled = Math.round(ratio * width);
+  const empty = width - filled;
+  const color = ratio >= 0.7 ? C.green : ratio >= 0.4 ? C.yellow : C.red;
+  const pct = Math.round(ratio * 100);
+  return `${color}${"█".repeat(filled)}${C.dim}${"░".repeat(empty)}${C.reset} ${pct}%`;
 }
 
 function formatChars(n: number): string {
@@ -84,24 +105,34 @@ function formatChars(n: number): string {
   return `${(n / 1_000_000).toFixed(1)}M`;
 }
 
-const W = 46;
-const line = "\u2500".repeat(W);
-const sep = "\u2500".repeat(30);
+const W = 52;
+const line = "─".repeat(W);
 
 function row(content: string): string {
-  const vw = visualWidth(content);
+  // Strip ANSI for width calculation
+  const stripped = content.replace(/\x1b\[[0-9;]*m/g, "");
+  const vw = visualWidth(stripped);
   const padSize = Math.max(0, W - vw);
-  return `\u2502${content}${" ".repeat(padSize)}\u2502`;
+  return `│${content}${" ".repeat(padSize)}│`;
 }
 
-function vwPad(s: string, target: number): string {
-  const vw = visualWidth(s);
-  return s + " ".repeat(Math.max(0, target - vw));
+function section(title: string): string {
+  return row(`  ${C.bold}${C.cyan}${title}${C.reset}`);
 }
 
-/** Render a labeled key-value row with visual-width-aware padding. */
 function kv(label: string, value: string): string {
-  return row(`  ${vwPad(label, 13)}: ${value}`);
+  const stripped = label.replace(/\x1b\[[0-9;]*m/g, "");
+  const gap = 18 - visualWidth(stripped);
+  return row(`  ${C.dim}${label}${C.reset}${" ".repeat(Math.max(1, gap))}${value}`);
+}
+
+function guardianGrade(antibodies: number, heals: number, holoSavings: number): { grade: string; label: string; color: string } {
+  const score = Math.min(antibodies * 15, 40) + Math.min(heals * 10, 30) + Math.min(holoSavings * 0.3, 30);
+  if (score >= 80) return { grade: "A+", label: "FORTIFIED", color: C.green };
+  if (score >= 60) return { grade: "A", label: "GUARDED", color: C.green };
+  if (score >= 40) return { grade: "B", label: "LEARNING", color: C.yellow };
+  if (score >= 20) return { grade: "C", label: "EXPOSED", color: C.yellow };
+  return { grade: "D", label: "VULNERABLE", color: C.red };
 }
 
 export async function scoreCommand() {
@@ -111,115 +142,87 @@ export async function scoreCommand() {
   try {
     const data = await daemonRequest<ScoreData>("/score");
     const h = data.hologram;
+    const holoSav = h.lifetime.savings;
+    const grade = guardianGrade(data.immune.antibodies, data.immune.autoHealed, holoSav);
 
-    // Title
-    console.log(`\u250C${line}\u2510`);
-    console.log(row(`  ${i18n.SCORE_TITLE}`));
-    console.log(`\u251C${line}\u2524`);
+    const out: string[] = [];
 
-    // Ecosystem
-    console.log(kv(i18n.SCORE_ECOSYSTEM, data.ecosystem.primary));
+    // ── Header ──
+    out.push(`┌${line}┐`);
+    out.push(row(`  ${C.bold}🛡️  Guardian Status${C.reset}              ${grade.color}${C.bold}[ ${grade.grade} ]${C.reset} ${grade.color}${grade.label}${C.reset}`));
+    out.push(`├${line}┤`);
+
+    // ── Health Gauge ──
+    const healthPct = Math.min(data.immune.antibodies * 15 + data.immune.autoHealed * 10 + holoSav * 0.3, 100);
+    out.push(row(`  ${gaugeBar(healthPct, 100, 30)}`));
+    out.push(`├${line}┤`);
+
+    // ── System Info ──
+    out.push(section(lang === "ko" ? "시스템 정보" : "System Info"));
+    out.push(kv(i18n.SCORE_ECOSYSTEM, `${C.white}${C.bold}${data.ecosystem.primary}${C.reset}`));
     if (data.ecosystem.detected.length > 1) {
       const others = data.ecosystem.detected.slice(1).map(e => e.name).join(", ");
-      console.log(kv(i18n.SCORE_ALSO_FOUND, others));
+      out.push(kv(i18n.SCORE_ALSO_FOUND, `${C.dim}${others}${C.reset}`));
     }
+    out.push(kv(i18n.SCORE_UPTIME, `${C.green}${formatUptime(data.uptime)}${C.reset}`));
+    out.push(kv(i18n.SCORE_EVENTS, `${data.totalEvents}`));
+    out.push(kv(i18n.SCORE_FILES_FOUND, `${data.watchedFiles.length}`));
 
-    // Uptime / Events / Files
-    console.log(`\u251C${line}\u2524`);
-    console.log(kv(i18n.SCORE_UPTIME, formatUptime(data.uptime)));
-    console.log(kv(i18n.SCORE_EVENTS, String(data.totalEvents)));
-    console.log(kv(i18n.SCORE_FILES_FOUND, String(data.watchedFiles.length)));
-    console.log(`\u251C${line}\u2524`);
-    console.log(row(`  ${vwPad(i18n.SCORE_ACTIVITY, 10)}${heatBar(data.totalEvents, 100)}`));
-
-    // Hologram section
-    console.log(`\u251C${line}\u2524`);
-    console.log(row(`  ${i18n.SCORE_HOLOGRAM_TITLE}`));
-    console.log(row(`  ${sep}`));
-    const lt = h.lifetime;
-    if (lt.requests > 0) {
-      // Today stats (if available)
-      if (h.today && h.today.requests > 0) {
-        const todaySaved = h.today.originalChars - h.today.hologramChars;
-        console.log(kv(`${i18n.SCORE_HOLOGRAM_TODAY}`, `${h.today.requests} req / ${formatChars(todaySaved)} saved (${h.today.savings}%)`));
-      }
-      // Lifetime stats
-      const ltSaved = lt.originalChars - lt.hologramChars;
-      console.log(kv(`${i18n.SCORE_HOLOGRAM_LIFETIME}`, `${lt.requests} req / ${formatChars(ltSaved)} saved (${lt.savings}%)`));
-      console.log(row(`  ${vwPad(i18n.SCORE_HOLOGRAM_EFFICIENCY, 10)}${heatBar(lt.savings, 100)}`));
-    } else {
-      console.log(row(`  ${i18n.SCORE_HOLOGRAM_EMPTY}`));
-      console.log(row(`  ${i18n.SCORE_HOLOGRAM_HINT}`));
-    }
-
-    // Immune System section
-    console.log(`\u251C${line}\u2524`);
-    console.log(row(`  ${i18n.SCORE_IMMUNE_TITLE}`));
-    console.log(row(`  ${sep}`));
+    // ── Immune System ──
+    out.push(`├${line}┤`);
+    out.push(section(lang === "ko" ? "면역 시스템" : "Immune System"));
     const ab = data.immune.antibodies;
     const ah = data.immune.autoHealed;
-    const immuneLevel = ab === 0 ? i18n.SCORE_IMMUNE_VULNERABLE
-      : ab < 3 ? i18n.SCORE_IMMUNE_LEARNING
-      : ab < 6 ? i18n.SCORE_IMMUNE_GUARDED
-      : i18n.SCORE_IMMUNE_FORTIFIED;
-    console.log(kv(i18n.SCORE_ANTIBODIES, String(ab)));
-    console.log(kv(i18n.SCORE_LEVEL, immuneLevel));
-    console.log(row(`  ${vwPad(i18n.SCORE_IMMUNITY, 10)}${heatBar(ab, 10)}`));
-    const healedStr = t(i18n.SCORE_AUTO_HEALED, { count: ah, s: ah !== 1 ? "s" : "" });
-    console.log(kv(i18n.SCORE_AUTO_HEALED_LABEL, healedStr));
+    out.push(kv(i18n.SCORE_ANTIBODIES, `${C.bold}${ab}${C.reset}`));
+    out.push(row(`  ${lang === "ko" ? "면역력" : "Immunity"}        ${gaugeBar(ab, 10, 20)}`));
+    out.push(kv(lang === "ko" ? "차단 횟수" : "Prevented", `${C.bold}${C.green}${ah}${C.reset}${C.dim} disaster${ah !== 1 ? "s" : ""}${C.reset}`));
     if (data.immune.lastAutoHeal) {
       const ago = formatUptime(Math.floor((Date.now() - data.immune.lastAutoHeal.at) / 1000));
-      const healStr = t(i18n.SCORE_LAST_HEAL, { id: data.immune.lastAutoHeal.id, ago });
-      console.log(kv(i18n.SCORE_LAST_EVENT, healStr));
+      out.push(kv(lang === "ko" ? "마지막 치유" : "Last Heal", `${data.immune.lastAutoHeal.id} ${C.dim}(${ago} ago)${C.reset}`));
     }
 
-    // Watched files
-    console.log(`\u251C${line}\u2524`);
-    if (data.watchedFiles.length > 0) {
-      console.log(row(`  ${i18n.SCORE_WATCHED_FILES}`));
-      for (const f of data.watchedFiles.slice(0, 8)) {
-        console.log(row(`    ${f.substring(0, W - 6)}`));
-      }
-      if (data.watchedFiles.length > 8) {
-        console.log(row(`    ... +${data.watchedFiles.length - 8} more`));
+    // ── Hologram Efficiency ──
+    out.push(`├${line}┤`);
+    out.push(section(lang === "ko" ? "토큰 효율 (홀로그램)" : "Token Efficiency (Hologram)"));
+    const lt = h.lifetime;
+    if (lt.requests > 0) {
+      const ltSaved = lt.originalChars - lt.hologramChars;
+      out.push(kv(lang === "ko" ? "총 요청" : "Requests", `${lt.requests}`));
+      out.push(kv(lang === "ko" ? "절약된 컨텍스트" : "Saved Context", `${C.green}${formatChars(ltSaved)} chars${C.reset}`));
+      out.push(row(`  ${lang === "ko" ? "효율" : "Efficiency"}       ${gaugeBar(lt.savings, 100, 20)}`));
+      if (h.today && h.today.requests > 0) {
+        const todaySaved = h.today.originalChars - h.today.hologramChars;
+        out.push(kv(lang === "ko" ? "오늘" : "Today", `${h.today.requests} req / ${C.green}${formatChars(todaySaved)} saved${C.reset}`));
       }
     } else {
-      console.log(row(`  ${i18n.SCORE_NO_FILES}`));
+      out.push(row(`  ${C.dim}${i18n.SCORE_HOLOGRAM_EMPTY}${C.reset}`));
+      out.push(row(`  ${C.dim}${i18n.SCORE_HOLOGRAM_HINT}${C.reset}`));
     }
 
-    // Last event
-    if (data.lastEvent) {
-      const ago = data.lastEventAt
-        ? t(i18n.SCORE_AGO, { time: formatUptime(Math.floor((Date.now() - data.lastEventAt) / 1000)) })
-        : "unknown";
-      console.log(`\u251C${line}\u2524`);
-      console.log(row(`  ${vwPad(i18n.SCORE_LAST_EVENT, 6)}: ${data.lastEvent.substring(0, 34)}`));
-      console.log(row(`        ${ago}`));
-    }
-
-    // Value Metrics section
+    // ── Value Delivered (ROI) ──
     try {
       const summary = await daemonRequest<ShiftSummary>("/shift-summary");
-      console.log(`\u251C${line}\u2524`);
-      console.log(row(`  ${i18n.SCORE_VALUE_TITLE}`));
-      console.log(row(`  ${sep}`));
-      console.log(kv(i18n.SHIFT_TOKENS, `~${fmtNum(summary.totalTokensSaved)}`));
-      console.log(kv(i18n.SHIFT_TIME, `~${summary.totalMinutesSaved} min`));
-      console.log(kv(i18n.SHIFT_COST, `~$${summary.totalCostSaved.toFixed(2)}`));
+      out.push(`├${line}┤`);
+      out.push(section(lang === "ko" ? "전달된 가치 (ROI)" : "Value Delivered (ROI)"));
+      out.push(kv(lang === "ko" ? "절약 토큰" : "Tokens Saved", `${C.bold}${C.green}~${fmtNum(summary.totalTokensSaved)}${C.reset}`));
+      out.push(kv(lang === "ko" ? "절약 시간" : "Time Saved", `${C.green}~${summary.totalMinutesSaved} min${C.reset}`));
+      out.push(kv(lang === "ko" ? "절약 비용" : "Cost Saved", `${C.green}~$${summary.totalCostSaved.toFixed(2)}${C.reset}`));
       if (summary.suppressionsSkipped > 0) {
-        console.log(kv(i18n.SHIFT_SUPPRESSED, `${summary.suppressionsSkipped}`));
+        out.push(kv(lang === "ko" ? "억제 횟수" : "Suppressed", `${summary.suppressionsSkipped}`));
       }
-      console.log(`\u251C${line}\u2524`);
-      const boast = localizedBoast(lang);
-      console.log(row(`  \uD83D\uDDE3\uFE0F ${boast.substring(0, W - 6)}`));
-    } catch {
-      // Non-fatal
-    }
+    } catch { /* non-fatal */ }
 
-    console.log(`\u2514${line}\u2518`);
+    // ── Boast ──
+    out.push(`├${line}┤`);
+    const boast = localizedBoast(lang);
+    const truncBoast = boast.length > W - 6 ? boast.slice(0, W - 9) + "..." : boast;
+    out.push(row(`  ${C.magenta}🗣️ ${truncBoast}${C.reset}`));
+    out.push(`└${line}┘`);
+
+    console.log(out.join("\n"));
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error(`[afd] ${msg}`);
+    console.error(`${C.red}[afd] ${msg}${C.reset}`);
     process.exit(1);
   }
 }
