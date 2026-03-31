@@ -6,6 +6,9 @@ import { scoreCommand } from "./commands/score";
 import { fixCommand } from "./commands/fix";
 import { syncCommand } from "./commands/sync";
 import { diagnoseCommand } from "./commands/diagnose";
+import { doctorCommand } from "./commands/doctor";
+import { watchCommand } from "./commands/watch";
+import { vaccineCommand } from "./commands/vaccine";
 import { langCommand } from "./commands/lang";
 
 const program = new Command();
@@ -13,7 +16,7 @@ const program = new Command();
 program
   .name("afd")
   .description("Autonomous Flow Daemon - The Immune System for AI Workflows")
-  .version("1.1.0");
+  .version("1.3.0");
 
 program
   .command("start")
@@ -39,7 +42,21 @@ program
 program
   .command("sync")
   .description("Synchronize AI agent configs across team")
+  .option("--push", "Push local antibodies to team vaccine store")
+  .option("--pull", "Pull antibodies from team vaccine store")
+  .option("--remote <url>", "Remote vaccine store URL (future)")
   .action(syncCommand);
+
+program
+  .command("doctor")
+  .description("Deep health analysis with recommendations and auto-fix")
+  .option("--fix", "Auto-fix detected issues")
+  .action(doctorCommand);
+
+program
+  .command("watch")
+  .description("Real-time TUI dashboard — live S.E.A.M event stream")
+  .action(watchCommand);
 
 program
   .command("diagnose")
@@ -47,6 +64,11 @@ program
   .option("--format <type>", "Output format: a2a or human", "human")
   .option("--auto-heal", "Auto-apply patches for known antibodies")
   .action(diagnoseCommand);
+
+program
+  .command("vaccine [subcommand] [arg]")
+  .description("Vaccine registry: list, search, install, publish")
+  .action(vaccineCommand);
 
 program
   .command("lang [language]")
