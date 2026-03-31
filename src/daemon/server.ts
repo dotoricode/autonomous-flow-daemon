@@ -11,12 +11,16 @@ import type { DetectionResult } from "../adapters/index";
 import { calcHealMetrics, maybeHealBoast, formatHealLog, formatDormantLog, buildShiftSummary } from "../core/boast";
 import { discoverWatchTargets } from "../core/discovery";
 import { formatTimestamp, lineDiff } from "../core/log-utils";
+import { semanticDiff, isAstSupported } from "../core/semantic-diff";
 import { LruStringMap } from "../core/lru-map";
 
 // ── Suppression Safety Constants ──
 const DOUBLE_TAP_WINDOW_MS = 30_000;  // 30 seconds — balances demo speed and production safety
 const MASS_EVENT_THRESHOLD = 3;       // >3 unlinks in 1 second
 const MASS_EVENT_WINDOW_MS = 1_000;   // 1 second window
+const TAP_CLEANUP_INTERVAL_MS = 60_000; // Purge stale first-tap entries every 60s
+const SELF_WRITE_DEBOUNCE_MS = 100;   // Debounce window for self-write fs.watch duplicates
+const MAX_SSE_CLIENTS = 20;             // Prevent DoS via excessive SSE connections
 
 interface HologramStats {
   totalRequests: number;
@@ -43,6 +47,8 @@ interface DaemonState {
   totalFileBytesSaved: number;
   /** In-memory snapshot of watched file contents for diff on change (LRU, 10MB cap) */
   fileSnapshots: LruStringMap;
+  /** SSE subscribers for live event streaming */
+  sseClients: Set<ReadableStreamDefaultController<Uint8Array>>;
 }
 
 const state: DaemonState = {
@@ -61,6 +67,7 @@ const state: DaemonState = {
   dormantTransitions: [],
   totalFileBytesSaved: 0,
   fileSnapshots: new LruStringMap(10 * 1024 * 1024), // 10 MB cap
+  sseClients: new Set(),
 };
 
 function cleanup() {
@@ -127,15 +134,19 @@ export function main(options: DaemonOptions = {}) {
     state.hologramStats.totalOriginalChars += originalChars;
     state.hologramStats.totalHologramChars += hologramChars;
 
-    // Persist lifetime
-    const hs = state.hologramStats;
-    updateLifetime.run(hs.totalRequests, hs.totalOriginalChars, hs.totalHologramChars);
+    try {
+      // Persist lifetime
+      const hs = state.hologramStats;
+      updateLifetime.run(hs.totalRequests, hs.totalOriginalChars, hs.totalHologramChars);
 
-    // Upsert today's daily row
-    upsertDaily.run(today(), 1, originalChars, hologramChars);
+      // Upsert today's daily row
+      upsertDaily.run(today(), 1, originalChars, hologramChars);
 
-    // Periodic purge (cheap: only deletes if rows exist beyond 7 days)
-    purgeOldDaily.run();
+      // Periodic purge (cheap: only deletes if rows exist beyond 7 days)
+      purgeOldDaily.run();
+    } catch (err) {
+      console.error("[afd] Failed to persist hologram stats:", err instanceof Error ? err.message : String(err));
+    }
   }
 
   // ── S.E.A.M Cycle Logger ──
@@ -143,6 +154,15 @@ export function main(options: DaemonOptions = {}) {
   const log = options.mcp ? console.error.bind(console) : console.log.bind(console);
   function seam(phase: string, msg: string) {
     log(`[${formatTimestamp()}] [afd] [${phase}] ${msg}`);
+    // Broadcast to SSE clients
+    const encoder = new TextEncoder();
+    const payload = JSON.stringify({ phase, msg, ts: Date.now() });
+    const sseData = encoder.encode(`data: ${payload}\n\n`);
+    const dead: ReadableStreamDefaultController<Uint8Array>[] = [];
+    for (const controller of state.sseClients) {
+      try { controller.enqueue(sseData); } catch { dead.push(controller); }
+    }
+    for (const c of dead) state.sseClients.delete(c);
   }
 
   /** Snapshot a file's content into memory for future diff */
@@ -175,6 +195,16 @@ export function main(options: DaemonOptions = {}) {
   }
 
   seedAntibodies();
+
+  // ── Periodic cleanup: purge stale first-tap entries to prevent memory leak ──
+  setInterval(() => {
+    const now = Date.now();
+    for (const [file, ts] of state.firstTapTimestamps) {
+      if (now - ts > DOUBLE_TAP_WINDOW_MS) {
+        state.firstTapTimestamps.delete(file);
+      }
+    }
+  }, TAP_CLEANUP_INTERVAL_MS);
 
   // ── Suppression Safety: Helper Functions ──
 
@@ -289,7 +319,40 @@ export function main(options: DaemonOptions = {}) {
     "CLAUDE.md": "IMM-003",
   };
 
+  // ── Self-write tracking: ignore watcher events caused by daemon's own file writes ──
+  const selfWrites = new Set<string>();
+
+  // ── Corruption double-tap: if same file is corruption-restored twice in 30s, stand down ──
+  const corruptionTaps = new Map<string, number>();
+
+  /** Check if a path is inside .afd/ (internal state — skip watcher reactions) */
+  function isInternalPath(p: string): boolean {
+    const normalized = p.replace(/\\/g, "/");
+    return normalized.startsWith(".afd/") || normalized.startsWith(AFD_DIR.replace(/\\/g, "/"));
+  }
+
+  /** Detect silent corruption: file exists but content is effectively destroyed */
+  function isCorrupted(oldContent: string, newContent: string, filePath: string): boolean {
+    const trimmed = newContent.trim();
+    // Empty or whitespace-only
+    if (trimmed.length === 0) return true;
+    // JSON file: empty object/array or invalid JSON
+    if (filePath.endsWith(".json")) {
+      if (trimmed === "{}" || trimmed === "[]") return true;
+      try { JSON.parse(newContent); } catch { return true; }
+    }
+    // 90%+ content reduction (only when original has meaningful length)
+    if (oldContent.length > 50 && newContent.length < oldContent.length * 0.1) return true;
+    return false;
+  }
+
   watcher.on("all", (event, path) => {
+    // ── Guard: ignore .afd/ internal files (DB, logs, registry, test artifacts) ──
+    if (isInternalPath(path)) return;
+
+    // ── Guard: ignore events caused by daemon's own writes (debounced 100ms) ──
+    if (selfWrites.has(path)) return;
+
     state.filesDetected++;
     state.lastEvent = `${event}:${path}`;
     state.lastEventAt = Date.now();
@@ -311,6 +374,8 @@ export function main(options: DaemonOptions = {}) {
       state.fileSnapshots.delete(path);
       const result = handleUnlink(path, Date.now());
       if (result === "healed") {
+        selfWrites.add(path);
+        setTimeout(() => selfWrites.delete(path), SELF_WRITE_DEBOUNCE_MS);
         seam("Mutate", `Restored ${path} from antibody snapshot`);
         snapshotFile(path);
         watcher.add(path);
@@ -331,11 +396,24 @@ export function main(options: DaemonOptions = {}) {
       const newSize = newContent.length;
 
       if (oldContent !== undefined && oldContent !== newContent) {
-        const diffs = lineDiff(oldContent, newContent);
-        if (diffs.length > 0) {
-          seam("Sense", `change → ${path} (${newSize} bytes)\n${diffs.join("\n")}`);
+        // Use semantic diff for TS/JS files, text diff for others
+        if (isAstSupported(path)) {
+          try {
+            const sdiff = semanticDiff(path, oldContent, newContent);
+            const breakingTag = sdiff.hasBreakingChanges ? " ⚠️ BREAKING" : "";
+            seam("Sense", `change → ${path} (${newSize} bytes)${breakingTag}\n  [semantic] ${sdiff.summary}`);
+          } catch {
+            // AST parse failure — fall back to text diff
+            const diffs = lineDiff(oldContent, newContent);
+            seam("Sense", `change → ${path} (${newSize} bytes)\n${diffs.join("\n")}`);
+          }
         } else {
-          seam("Sense", `change → ${path} (${newSize} bytes, whitespace-only diff)`);
+          const diffs = lineDiff(oldContent, newContent);
+          if (diffs.length > 0) {
+            seam("Sense", `change → ${path} (${newSize} bytes)\n${diffs.join("\n")}`);
+          } else {
+            seam("Sense", `change → ${path} (${newSize} bytes, whitespace-only diff)`);
+          }
         }
       } else if (oldContent === undefined) {
         seam("Sense", `change → ${path} (${newSize} bytes, no previous snapshot)`);
@@ -343,15 +421,38 @@ export function main(options: DaemonOptions = {}) {
         seam("Sense", `change → ${path} (${newSize} bytes, content identical — touch or metadata)`);
       }
 
-      // Update in-memory snapshot
-      state.fileSnapshots.set(path, newContent);
-
       // Re-seed antibody if this is an immune-critical file
       const abId = immuneMap[path];
-      if (abId) {
-        const patches: PatchOp[] = [{ op: "add", path: `/${path}`, value: newContent }];
-        insertAntibody.run(abId, "auto-seed", path, JSON.stringify(patches));
-        seam("Adapt", `Antibody ${abId} updated: stored latest ${path} (${newSize} bytes) for auto-restore`);
+      if (abId && oldContent !== undefined) {
+        // ── Corruption Detection: silent content destruction ──
+        if (isCorrupted(oldContent, newContent, path)) {
+          // Double-tap for corruption: if restored twice in 30s, stand down
+          const prevCorruption = corruptionTaps.get(path);
+          const now = Date.now();
+          if (prevCorruption && (now - prevCorruption) < DOUBLE_TAP_WINDOW_MS) {
+            // Second corruption within window — user/agent is intentional
+            corruptionTaps.delete(path);
+            state.fileSnapshots.set(path, newContent);
+            insertAntibody.run(abId, "auto-seed", path, JSON.stringify([{ op: "add", path: `/${path}`, value: newContent }]));
+            seam("Adapt", `Corruption double-tap on ${path} — standing down, accepting new content`);
+          } else {
+            // First corruption — restore from snapshot
+            corruptionTaps.set(path, now);
+            selfWrites.add(path);
+            setTimeout(() => selfWrites.delete(path), SELF_WRITE_DEBOUNCE_MS);
+            writeFileSync(resolve(path), oldContent, "utf-8");
+            seam("Mutate", `Silent corruption detected in ${path} (${oldContent.length} → ${newSize} bytes) — restored from snapshot`);
+          }
+        } else {
+          // Normal modification — update snapshot and re-seed antibody
+          state.fileSnapshots.set(path, newContent);
+          const patches: PatchOp[] = [{ op: "add", path: `/${path}`, value: newContent }];
+          insertAntibody.run(abId, "auto-seed", path, JSON.stringify(patches));
+          seam("Adapt", `Antibody ${abId} updated: stored latest ${path} (${newSize} bytes) for auto-restore`);
+        }
+      } else {
+        // Non-immune file or no previous snapshot — just update snapshot
+        state.fileSnapshots.set(path, newContent);
       }
       return;
     }
@@ -492,11 +593,21 @@ export function main(options: DaemonOptions = {}) {
       mcpError(id, -32601, `Unknown method: ${method}`);
     }
 
+    const MCP_MAX_BUFFER = 1024 * 1024; // 1 MB — reject oversized payloads without newline
+
     (async () => {
       const decoder = new TextDecoder();
       let buffer = "";
       for await (const chunk of Bun.stdin.stream()) {
         buffer += decoder.decode(chunk);
+
+        // Guard against unbounded buffer growth (no newline → malicious/broken client)
+        if (buffer.length > MCP_MAX_BUFFER) {
+          console.error("[afd] MCP buffer overflow — dropping buffer");
+          buffer = "";
+          continue;
+        }
+
         // Process all complete lines in buffer
         let newlineIdx: number;
         while ((newlineIdx = buffer.indexOf("\n")) !== -1) {
@@ -510,7 +621,10 @@ export function main(options: DaemonOptions = {}) {
           }
         }
       }
-    })();
+    })().catch((err) => {
+      console.error("[afd] MCP stdin loop error:", err instanceof Error ? err.message : String(err));
+      process.exit(1);
+    });
     return; // file watcher + stdin loop keep process alive
   }
 
@@ -711,6 +825,29 @@ export function main(options: DaemonOptions = {}) {
           dormantTransitions: state.dormantTransitions.length,
         });
         return Response.json(summary);
+      }
+
+      if (url.pathname === "/events") {
+        if (state.sseClients.size >= MAX_SSE_CLIENTS) {
+          return Response.json({ error: "Too many SSE clients" }, { status: 429 });
+        }
+        let sseController: ReadableStreamDefaultController<Uint8Array>;
+        const stream = new ReadableStream<Uint8Array>({
+          start(controller) {
+            sseController = controller;
+            state.sseClients.add(controller);
+          },
+          cancel() {
+            state.sseClients.delete(sseController);
+          },
+        });
+        return new Response(stream, {
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+          },
+        });
       }
 
       if (url.pathname === "/stop") {
