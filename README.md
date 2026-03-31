@@ -135,7 +135,7 @@ afd stop       # Graceful shutdown
 │  ──────────────────────────────              │
 │  Antibodies   : 7                            │
 │  Level        : Fortified                    │
-│  Auto-healed  : 3 background events         │
+│  Auto-healed  : 3 background events          │
 │  Last heal    : IMM-003 (12m ago)            │
 ├──────────────────────────────────────────────┤
 │  Suppression Safety                          │
