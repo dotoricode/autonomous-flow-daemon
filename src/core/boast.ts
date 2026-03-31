@@ -98,6 +98,11 @@ export function dormantBoast(lang?: SupportedLang): string {
   return pick(msg(lang).BOAST_DORMANT);
 }
 
+/** Pick a random shift-end boast in the given locale. */
+export function localizedBoast(lang?: SupportedLang): string {
+  return pick(msg(lang).BOAST_SHIFT_END);
+}
+
 /** Format a single heal log line with metrics. */
 export function formatHealLog(
   fileName: string,
@@ -152,7 +157,9 @@ export function formatShiftSummary(s: ShiftSummary, lang?: SupportedLang): strin
   }
 
   lines.push("├──────────────────────────────────────────────┤");
-  lines.push(pad(`  ${s.boast}`));
+  // Override server-side boast with locale-appropriate one
+  const localBoast = pick(m.BOAST_SHIFT_END);
+  lines.push(pad(`  ${localBoast}`));
   lines.push("└──────────────────────────────────────────────┘");
   lines.push("");
 
