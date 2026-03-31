@@ -9,9 +9,10 @@ import type { PatchOp } from "../core/immune";
 import { detectEcosystem } from "../adapters/index";
 import type { DetectionResult } from "../adapters/index";
 import { calcHealMetrics, maybeHealBoast, formatHealLog, formatDormantLog, buildShiftSummary } from "../core/boast";
+import { discoverWatchTargets } from "../core/discovery";
 
 // ── Suppression Safety Constants ──
-const DOUBLE_TAP_WINDOW_MS = 60_000; // 60 seconds
+const DOUBLE_TAP_WINDOW_MS = 30_000;  // 30 seconds — balances demo speed and production safety
 const MASS_EVENT_THRESHOLD = 3;       // >3 unlinks in 1 second
 const MASS_EVENT_WINDOW_MS = 1_000;   // 1 second window
 
@@ -82,6 +83,32 @@ export function main(options: DaemonOptions = {}) {
   const findAntibodyByFile = db.prepare("SELECT id, dormant FROM antibodies WHERE file_target = ? AND dormant = 0");
   const setAntibodyDormant = db.prepare("UPDATE antibodies SET dormant = 1 WHERE id = ?");
 
+  // ── S.E.A.M Cycle Logger ──
+  function seam(phase: string, msg: string) {
+    console.log(`[afd] [${phase}] ${msg}`);
+  }
+
+  // ── Auto-Seed Antibodies on Startup ──
+  // Read existing immune-critical files and learn antibodies so they can be restored on delete
+  function seedAntibodies() {
+    const immuneFiles = [
+      { id: "IMM-001", path: ".claudeignore" },
+      { id: "IMM-002", path: ".claude/hooks.json" },
+      { id: "IMM-003", path: "CLAUDE.md" },
+    ];
+
+    for (const { id, path: filePath } of immuneFiles) {
+      if (existsSync(filePath)) {
+        const content = readFileSync(filePath, "utf-8");
+        const patches: PatchOp[] = [{ op: "add", path: `/${filePath}`, value: content }];
+        insertAntibody.run(id, "auto-seed", filePath, JSON.stringify(patches));
+        seam("Adapt", `Antibody ${id} seeded for ${filePath} (${content.length} bytes)`);
+      }
+    }
+  }
+
+  seedAntibodies();
+
   // ── Suppression Safety: Helper Functions ──
 
   /** Check if we're in a mass-event burst (>3 unlinks within 1 second) */
@@ -100,6 +127,7 @@ export function main(options: DaemonOptions = {}) {
   function autoHealFile(antibodyId: string, fileTarget: string, patchOp: string) {
     const t0 = performance.now();
     try {
+      seam("Mutate", `Restoring ${fileTarget} via antibody ${antibodyId}...`);
       const patches = JSON.parse(patchOp) as PatchOp[];
       let bytesWritten = 0;
       for (const patch of patches) {
@@ -120,8 +148,8 @@ export function main(options: DaemonOptions = {}) {
       const boast = maybeHealBoast(5); // 1-in-5 chance
       const fileName = fileTarget.split("/").pop() ?? fileTarget;
       console.log(formatHealLog(fileName, metrics, boast));
-    } catch {
-      // Crash-only: if healing fails, let it go
+    } catch (err) {
+      seam("Mutate", `FAILED to restore ${fileTarget}: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 
@@ -129,7 +157,11 @@ export function main(options: DaemonOptions = {}) {
    * Handle unlink event with Double-Tap and Mass-Event heuristics.
    * Returns true if the event was handled (healed or made dormant).
    */
-  function handleUnlink(filePath: string, now: number): boolean {
+  /**
+   * Handle unlink event with Double-Tap and Mass-Event heuristics.
+   * Returns: "healed" | "dormant" | null
+   */
+  function handleUnlink(filePath: string, now: number): "healed" | "dormant" | null {
     // Record for mass-event detection
     state.recentUnlinks.push(now);
     insertUnlinkLog.run(filePath, now);
@@ -138,18 +170,18 @@ export function main(options: DaemonOptions = {}) {
     if (isMassEvent(now)) {
       state.suppressionSkippedCount++;
       clearTapsOnMassEvent();
-      return false; // Do nothing — likely git checkout or bulk operation
+      return null; // Do nothing — likely git checkout or bulk operation
     }
 
     // Find active (non-dormant) antibody protecting this file
     const antibody = findAntibodyByFile.get(filePath) as { id: string; dormant: number } | null;
-    if (!antibody) return false; // No antibody for this file
+    if (!antibody) return null; // No antibody for this file
 
     // Fetch full antibody data for healing
     const fullAntibody = db.prepare("SELECT * FROM antibodies WHERE id = ?").get(antibody.id) as {
       id: string; patch_op: string; file_target: string;
     } | null;
-    if (!fullAntibody) return false;
+    if (!fullAntibody) return null;
 
     // Double-Tap detection
     const previousTap = state.firstTapTimestamps.get(filePath);
@@ -160,19 +192,28 @@ export function main(options: DaemonOptions = {}) {
       state.firstTapTimestamps.delete(filePath);
       state.dormantTransitions.push({ antibodyId: antibody.id, at: now });
       console.log(formatDormantLog(antibody.id));
-      return true; // Dormant — do NOT heal
+      return "dormant";
     }
 
     // FIRST TAP: record timestamp and auto-heal
     state.firstTapTimestamps.set(filePath, now);
     autoHealFile(fullAntibody.id, fullAntibody.file_target, fullAntibody.patch_op);
-    return true;
+    return "healed";
   }
 
-  // File watcher
-  const watcher = watch(WATCH_TARGETS, {
+  // ── Smart Discovery: scan for AI-context files ──
+  const discovery = discoverWatchTargets(WATCH_TARGETS);
+  seam("Sense", `Smart Discovery: ${discovery.targets.length} targets found in ${discovery.elapsedMs}ms`);
+  if (discovery.discoveredCount > 0) {
+    seam("Sense", `Discovered ${discovery.discoveredCount} extra: ${discovery.targets.filter(t => !WATCH_TARGETS.includes(t)).join(", ")}`);
+  }
+
+  // File watcher — atomic: 100 to handle rapid delete-recreate cycles
+  // watcher.add() after restore ensures re-detection (see handleUnlink caller)
+  const watcher = watch(discovery.targets, {
     ignoreInitial: false,
     persistent: true,
+    atomic: 100,
   });
 
   watcher.on("all", (event, path) => {
@@ -184,9 +225,35 @@ export function main(options: DaemonOptions = {}) {
     }
     insertEvent.run(event, path, Date.now());
 
-    // Suppression safety: handle unlink events
+    // S.E.A.M cycle logging
+    seam("Sense", `${event} → ${path}`);
+
     if (event === "unlink") {
-      handleUnlink(path, Date.now());
+      seam("Extract", `File deleted: ${path} — checking antibodies`);
+      const result = handleUnlink(path, Date.now());
+      if (result === "healed") {
+        seam("Mutate", `Restore complete for ${path}`);
+        // Re-add to watcher so future deletes are detected
+        watcher.add(path);
+      } else if (result === "dormant") {
+        seam("Adapt", `Double-tap confirmed — ${path} deletion honored`);
+      } else {
+        seam("Extract", `No antibody found for ${path} — skipped`);
+      }
+    } else if (event === "change") {
+      // Re-seed antibody on file change so restore always has latest content
+      const immuneMap: Record<string, string> = {
+        ".claudeignore": "IMM-001",
+        ".claude/hooks.json": "IMM-002",
+        "CLAUDE.md": "IMM-003",
+      };
+      const abId = immuneMap[path];
+      if (abId && existsSync(path)) {
+        const content = readFileSync(path, "utf-8");
+        const patches: PatchOp[] = [{ op: "add", path: `/${path}`, value: content }];
+        insertAntibody.run(abId, "auto-seed", path, JSON.stringify(patches));
+        seam("Adapt", `Antibody ${abId} refreshed for ${path}`);
+      }
     }
   });
 
@@ -320,7 +387,7 @@ export function main(options: DaemonOptions = {}) {
           lastEvent: state.lastEvent,
           lastEventAt: state.lastEventAt,
           watchedFiles: state.watchedFiles,
-          watchTargets: WATCH_TARGETS,
+          watchTargets: discovery.targets,
           hologram: {
             requests: hs.totalRequests,
             originalChars: hs.totalOriginalChars,
