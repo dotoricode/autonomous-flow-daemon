@@ -189,12 +189,6 @@ Claude Code MCP 설정(`~/.claude/mcp.json` 또는 프로젝트 `.mcp.json`)에 
 }
 ```
 
-또는 포함된 매니페스트를 바로 복사하세요:
-
-```bash
-cp mcp-config.json .mcp.json
-```
-
 ### 수동 실행
 
 ```bash

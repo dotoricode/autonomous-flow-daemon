@@ -224,12 +224,6 @@ Add to your Claude Code MCP config (`~/.claude/mcp.json` or project-level `.mcp.
 }
 ```
 
-Or copy the included manifest directly:
-
-```bash
-cp mcp-config.json .mcp.json
-```
-
 ### Manual
 
 ```bash
