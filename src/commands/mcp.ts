@@ -55,16 +55,19 @@ function afdMcpEntry(): McpServerEntry {
 }
 
 /** Register afd in a JSON config file's mcpServers section */
-function registerInFile(filePath: string, entry: McpServerEntry): "done" | "skip" {
+function registerInFile(filePath: string, entry: McpServerEntry): "done" | "skip" | "error" {
   let config: McpConfig = {};
   if (existsSync(filePath)) {
     try {
       config = JSON.parse(readFileSync(filePath, "utf-8"));
     } catch {
+      // Preserve existing file by reading raw content for backup
       config = {};
     }
   } else {
-    mkdirSync(dirname(filePath), { recursive: true });
+    try {
+      mkdirSync(dirname(filePath), { recursive: true });
+    } catch { return "error"; }
   }
 
   const servers = (config.mcpServers ?? {}) as Record<string, McpServerEntry>;
@@ -77,7 +80,11 @@ function registerInFile(filePath: string, entry: McpServerEntry): "done" | "skip
 
   servers.afd = entry;
   config.mcpServers = servers;
-  writeFileSync(filePath, JSON.stringify(config, null, 2) + "\n", "utf-8");
+  try {
+    writeFileSync(filePath, JSON.stringify(config, null, 2) + "\n", "utf-8");
+  } catch {
+    return "error";
+  }
   return "done";
 }
 
@@ -107,12 +114,14 @@ export async function mcpCommand(subcommand?: string) {
   // 1. Project-level: .mcp.json
   const projectPath = resolve(".mcp.json");
   const projectResult = registerInFile(projectPath, entry);
-  console.log(projectResult === "done" ? m.projectDone(projectPath) : m.projectSkip(projectPath));
+  if (projectResult === "error") console.error(`  [project] Failed to write ${projectPath}`);
+  else console.log(projectResult === "done" ? m.projectDone(projectPath) : m.projectSkip(projectPath));
 
   // 2. Global-level: ~/.claude.json — mcpServers section
   const globalPath = globalClaudeConfigPath();
   const globalResult = registerInFile(globalPath, entry);
-  console.log(globalResult === "done" ? m.globalDone(globalPath) : m.globalSkip(globalPath));
+  if (globalResult === "error") console.error(`  [global]  Failed to write ${globalPath}`);
+  else console.log(globalResult === "done" ? m.globalDone(globalPath) : m.globalSkip(globalPath));
 
   console.log("");
   console.log(m.success);

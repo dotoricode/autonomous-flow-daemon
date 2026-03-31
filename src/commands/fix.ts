@@ -13,6 +13,9 @@ function applyPatch(patch: PatchOp): boolean {
   // Map JSON-Patch path to filesystem path (strip leading /)
   const filePath = patch.path.replace(/^\//, "");
 
+  // Guard: reject path traversal attempts
+  if (filePath.includes("..") || filePath.startsWith("/") || /^[A-Za-z]:/.test(filePath)) return false;
+
   if (patch.op === "add") {
     if (existsSync(filePath)) return false; // don't overwrite
     const dir = dirname(filePath);

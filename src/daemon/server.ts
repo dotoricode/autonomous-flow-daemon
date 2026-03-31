@@ -34,7 +34,7 @@ interface DaemonState {
   filesDetected: number;
   lastEvent: string | null;
   lastEventAt: number | null;
-  watchedFiles: string[];
+  watchedFiles: Set<string>;
   hologramStats: HologramStats;
   ecosystems: DetectionResult[];
   autoHealCount: number;
@@ -57,7 +57,7 @@ const state: DaemonState = {
   filesDetected: 0,
   lastEvent: null,
   lastEventAt: null,
-  watchedFiles: [],
+  watchedFiles: new Set(),
   hologramStats: { totalRequests: 0, totalOriginalChars: 0, totalHologramChars: 0 },
   ecosystems: [],
   autoHealCount: 0,
@@ -71,7 +71,13 @@ const state: DaemonState = {
   sseClients: new Set(),
 };
 
+// Resources to clean up on exit (populated inside main())
+let _cleanupResources: { watcher?: ReturnType<typeof watch>; interval?: ReturnType<typeof setInterval>; db?: { close(): void } } = {};
+
 function cleanup() {
+  try { _cleanupResources.interval && clearInterval(_cleanupResources.interval); } catch {}
+  try { _cleanupResources.watcher?.close(); } catch {}
+  try { _cleanupResources.db?.close(); } catch {}
   try { unlinkSync(PID_FILE); } catch {}
   try { unlinkSync(PORT_FILE); } catch {}
 }
@@ -85,6 +91,7 @@ export function main(options: DaemonOptions = {}) {
   state.ecosystems = detectEcosystem(process.cwd());
 
   const db = initDb();
+  _cleanupResources.db = db;
   const insertEvent = db.prepare("INSERT INTO events (type, path, timestamp) VALUES (?, ?, ?)");
   const insertAntibody = db.prepare(
     "INSERT OR REPLACE INTO antibodies (id, pattern_type, file_target, patch_op, created_at) VALUES (?, ?, ?, ?, datetime('now'))"
@@ -244,15 +251,22 @@ export function main(options: DaemonOptions = {}) {
 
   seedAntibodies();
 
-  // ── Periodic cleanup: purge stale first-tap entries to prevent memory leak ──
-  setInterval(() => {
+  // ── Periodic cleanup: purge stale entries to prevent memory leaks ──
+  const tapCleanupInterval = setInterval(() => {
     const now = Date.now();
     for (const [file, ts] of state.firstTapTimestamps) {
       if (now - ts > DOUBLE_TAP_WINDOW_MS) {
         state.firstTapTimestamps.delete(file);
       }
     }
+    // Also purge stale corruption-tap entries
+    for (const [file, ts] of corruptionTaps) {
+      if (now - ts > DOUBLE_TAP_WINDOW_MS) {
+        corruptionTaps.delete(file);
+      }
+    }
   }, TAP_CLEANUP_INTERVAL_MS);
+  _cleanupResources.interval = tapCleanupInterval;
 
   // ── Suppression Safety: Helper Functions ──
 
@@ -336,6 +350,7 @@ export function main(options: DaemonOptions = {}) {
       setAntibodyDormant.run(antibody.id);
       state.firstTapTimestamps.delete(filePath);
       state.dormantTransitions.push({ antibodyId: antibody.id, at: now });
+      if (state.dormantTransitions.length > 100) state.dormantTransitions.shift();
       log(formatDormantLog(antibody.id));
       return "dormant";
     }
@@ -361,6 +376,7 @@ export function main(options: DaemonOptions = {}) {
     persistent: true,
     atomic: 100,
   });
+  _cleanupResources.watcher = watcher;
 
   const immuneMap: Record<string, string> = {
     ".claudeignore": "IMM-001",
@@ -405,9 +421,7 @@ export function main(options: DaemonOptions = {}) {
     state.filesDetected++;
     state.lastEvent = `${event}:${path}`;
     state.lastEventAt = Date.now();
-    if (!state.watchedFiles.includes(path)) {
-      state.watchedFiles.push(path);
-    }
+    state.watchedFiles.add(path);
     insertEvent.run(event, path, Date.now());
 
     // ── add / addDir: take initial snapshot ──
@@ -790,7 +804,7 @@ export function main(options: DaemonOptions = {}) {
           totalEvents: eventCount.cnt,
           lastEvent: state.lastEvent,
           lastEventAt: state.lastEventAt,
-          watchedFiles: state.watchedFiles,
+          watchedFiles: [...state.watchedFiles],
           watchTargets: discovery.targets,
           hologram: {
             lifetime: {
@@ -923,14 +937,14 @@ export function main(options: DaemonOptions = {}) {
         if (state.sseClients.size >= MAX_SSE_CLIENTS) {
           return Response.json({ error: "Too many SSE clients" }, { status: 429 });
         }
-        let sseController: ReadableStreamDefaultController<Uint8Array>;
+        let sseController: ReadableStreamDefaultController<Uint8Array> | null = null;
         const stream = new ReadableStream<Uint8Array>({
           start(controller) {
             sseController = controller;
             state.sseClients.add(controller);
           },
           cancel() {
-            state.sseClients.delete(sseController);
+            if (sseController) state.sseClients.delete(sseController);
           },
         });
         return new Response(stream, {
