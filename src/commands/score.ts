@@ -1,4 +1,8 @@
 import { daemonRequest } from "../daemon/client";
+import { fmtNum, visualWidth } from "../core/boast";
+import type { ShiftSummary } from "../core/boast";
+import { getSystemLanguage } from "../core/locale";
+import { getMessages } from "../core/i18n/messages";
 
 interface HologramScore {
   requests: number;
@@ -28,6 +32,12 @@ interface EcosystemScore {
   primary: string;
 }
 
+interface SuppressionScore {
+  massEventsSkipped: number;
+  dormantTransitions: number;
+  activeTaps: number;
+}
+
 interface ScoreData {
   uptime: number;
   filesDetected: number;
@@ -39,6 +49,7 @@ interface ScoreData {
   hologram: HologramScore;
   immune: ImmuneScore;
   ecosystem: EcosystemScore;
+  suppression: SuppressionScore;
 }
 
 function formatUptime(seconds: number): string {
@@ -60,9 +71,21 @@ function formatChars(n: number): string {
   return `${(n / 1_000_000).toFixed(1)}M`;
 }
 
+
+
 const W = 46; // inner box width
 const line = "\u2500".repeat(W);
-const row = (content: string) => `\u2502${content.padEnd(W)}\u2502`;
+function row(content: string): string {
+  const vw = visualWidth(content);
+  const padSize = Math.max(0, W - vw);
+  return `\u2502${content}${" ".repeat(padSize)}\u2502`;
+}
+
+/** Pad a string to target visual width. */
+function vwPad(s: string, target: number): string {
+  const vw = visualWidth(s);
+  return s + " ".repeat(Math.max(0, target - vw));
+}
 
 export async function scoreCommand() {
   try {
@@ -137,6 +160,26 @@ export async function scoreCommand() {
       console.log(`\u251C${line}\u2524`);
       console.log(row(`  Last: ${data.lastEvent.substring(0, 36)}`));
       console.log(row(`        ${ago}`));
+    }
+
+    // Value Metrics section (shift summary lite)
+    try {
+      const lang = getSystemLanguage();
+      const i18n = getMessages(lang);
+      const summary = await daemonRequest<ShiftSummary>("/shift-summary");
+      console.log(`\u251C${line}\u2524`);
+      console.log(row(`  ${i18n.SCORE_VALUE_TITLE}`));
+      console.log(row("  \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"));
+      console.log(row(`  ${vwPad(i18n.SHIFT_TOKENS, 13)}: ~${fmtNum(summary.totalTokensSaved)}`));
+      console.log(row(`  ${vwPad(i18n.SHIFT_TIME, 13)}: ~${summary.totalMinutesSaved} min`));
+      console.log(row(`  ${vwPad(i18n.SHIFT_COST, 13)}: ~$${summary.totalCostSaved.toFixed(2)}`));
+      if (summary.suppressionsSkipped > 0) {
+        console.log(row(`  ${vwPad(i18n.SHIFT_SUPPRESSED, 13)}: ${summary.suppressionsSkipped} mass events`));
+      }
+      console.log(`\u251C${line}\u2524`);
+      console.log(row(`  \uD83D\uDDE3\uFE0F ${summary.boast.substring(0, W - 6)}`));
+    } catch {
+      // Non-fatal: daemon might not support shift-summary yet
     }
 
     console.log(`\u2514${line}\u2518`);
