@@ -6,6 +6,14 @@
 <p align="center"><strong>AI가 스스로 고치는 개발 환경. 복구까지 단 0.2초.</strong></p>
 
 <p align="center">
+  <img src="demo.gif" width="850" alt="afd demo" style="border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.4);">
+  <br>
+  <br>
+  <b>🛡️ 불멸의 컨텍스트 흐름:</b> 
+  <em>"afd는 지연 시간이 거의 없는 즉각적인 복구를 통해, AI 개발 흐름이 끊기지 않도록 보호하고 토큰 비용을 혁신적으로 절감합니다."</em>
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/version-1.0.0-blue?style=flat-square" alt="version" />
   <a href="https://www.npmjs.com/package/autonomous-flow-daemon"><img src="https://img.shields.io/npm/v/autonomous-flow-daemon?style=flat-square&logo=npm&color=cb0000" alt="npm" /></a>
   <img src="https://img.shields.io/badge/runtime-Bun-f472b6?style=flat-square&logo=bun" alt="Bun" />
@@ -36,6 +44,16 @@
 
 ---
 
+## 🚀 제로-간섭 약속 (Zero-Interference Promise)
+
+`afd`는 개발 흐름을 방해하는 것이 아니라, 보호하기 위해 설계되었습니다.
+
+* **성능 저하 없음:** Bun 기반의 네이티브 백그라운드 데몬으로 실행되어, **CPU 점유율 0.1% 미만**, **메모리 약 40MB**만을 사용합니다.
+* **매끄러운 복구:** **밀리초 미만(Sub-millisecond)의 복구 속도**를 통해, Claude Code가 컨텍스트 오류를 인지하기도 전에 파일을 원래대로 되돌려 놓습니다.
+* **비침습적 설계:** `afd`는 OS 계층에서 파일 시스템 이벤트만 관찰합니다. Claude Code의 내부 실행이나 API 호출을 가로채거나 수정하지 않습니다.
+
+---
+
 ## 🚀 명령어 한 줄로 끝나는 경험
 
 > **"더 이상의 설정 삽질은 없습니다. 완전한 방어 환경을 구축하세요."**
@@ -53,14 +71,14 @@ bun link && afd start
 이게 전부입니다. 나머지는 `afd`가 알아서 처리합니다:
 
 - **자동 훅(Hook) 주입** — Claude Code의 `PreToolUse` 훅을 자동으로 설치합니다. 더 이상 `.json` 파일을 직접 수정하며 고생하지 마세요.
-- **초고속 실시간 감시** — `.claude/`, `CLAUDE.md`, `.cursorrules` 등 핵심 파일을 10ms 단위로 모니터링합니다.
+- **초고속 실시간 감시** — `.claude/`, `CLAUDE.md`, `.cursorrules`, `.claudeignore`, `.gitignore` 핵심 파일을 10ms 단위로 모니터링합니다.
 - **배경 자율 치유** — 파일이 삭제되거나 손상되면 **S.E.A.M 사이클**이 조용히 복구합니다. 사용자가 눈치채기도 전에 모든 상황은 종료됩니다.
 
 ```
 $ afd start
   🛡️ afd 데몬 시작 (pid 4812, port 52413)
   ✅ .claude/hooks.json에 감시 훅 주입 완료
-  👀 감시 중: .claude/, CLAUDE.md, .cursorrules
+  👀 감시 중: .claude/, CLAUDE.md, .cursorrules, .claudeignore, .gitignore
   ✨ 준비되었습니다.
 ```
 
@@ -92,6 +110,20 @@ graph LR
 | **Mutate** | RFC 6902 JSON-Patch 기술로 원본 파일을 완벽히 복원 | < 25ms |
 
 > **최종 성적표:** 파일 삭제 감지부터 복구 완료까지 **270ms 미만**.
+
+### 감시 대상 (Watch Targets)
+
+아래 파일들이 실시간 감시됩니다. 면역 파일(IMM-*)은 삭제 시 자동으로 복구됩니다:
+
+| 대상 | 유형 | 항체 | 자동 복구 |
+|:-----|:-----|:-----|:----------|
+| `.claude/` | 디렉토리 | IMM-002 (`hooks.json`) | ✅ |
+| `CLAUDE.md` | 파일 | IMM-003 | ✅ |
+| `.claudeignore` | 파일 | IMM-001 | ✅ |
+| `.cursorrules` | 파일 | — | 이벤트 로깅만 |
+| `.gitignore` | 파일 | — | 이벤트 로깅만 |
+
+> 항체는 **데몬 시작 시 자동으로 학습**되며, **파일 변경 시마다 갱신**됩니다 — 복구 시 항상 최신 내용이 반영됩니다.
 
 ---
 
@@ -146,12 +178,13 @@ graph LR
 `afd`는 바보처럼 무조건 되살리지 않습니다. 사용자의 **진짜 의도**를 읽습니다:
 
 ```bash
-$rm .claudeignore      # 1차 삭제: "실수인가 보군." -> 즉시 복구$ rm .claudeignore      # 60초 내 재삭제: "진짜 지우고 싶구나?" 
-  🛡️ [afd] 사용자 의도 확인. 항체 IMM-001 휴면 전환. 삭제를 존중합니다.
+$ rm .claudeignore      # 1차 삭제: "실수인가 보군." → 즉시 복구
+$ rm .claudeignore      # 30초 내 재삭제: "진짜 지우고 싶구나?"
+  🫡 [afd] 사용자 의도 확인. 항체 IMM-001 휴면 전환. 삭제를 존중합니다.
 ```
 
 - **실수 방어:** 한 번의 삭제는 0.2초 만에 즉시 복구합니다.
-- **의도 존중:** 1분 내에 같은 파일을 또 지우면 사용자의 확고한 의지로 판단해 복구를 멈춥니다.
+- **의도 존중:** 30초 내에 같은 파일을 또 지우면 사용자의 확고한 의지로 판단해 복구를 멈춥니다.
 - **Git 쇼크 방지:** `git checkout`처럼 수많은 파일이 한꺼번에 바뀌는 상황(1초 내 3개 이상)은 '대규모 이벤트'로 자동 인식하여 과도한 치유 동작을 멈춥니다.
 
 ### 백신 네트워크 (팀 전파)

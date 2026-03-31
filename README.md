@@ -6,6 +6,18 @@
 <p align="center"><strong>Self-healing AI development environments in < 270ms.</strong></p>
 
 <p align="center">
+  <a href="https://github.com/dotoricode/autonomous-flow-daemon">
+    <img src="demo.gif" width="850" alt="afd demo" style="border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.4);">
+  </a>
+  <br>
+  <br>
+  <b>🛡️ Immortal Context Flow:</b> 
+  <em>"afd restores critical config files with <b>near-zero latency</b>, ensuring your AI workflow remains unbroken and cost-efficient."</em>
+</p>
+
+---
+
+<p align="center">
   <img src="https://img.shields.io/badge/version-1.0.0-blue?style=flat-square" alt="version" />
   <a href="https://www.npmjs.com/package/autonomous-flow-daemon"><img src="https://img.shields.io/npm/v/autonomous-flow-daemon?style=flat-square&logo=npm&color=cb0000" alt="npm" /></a>
   <img src="https://img.shields.io/badge/runtime-Bun-f472b6?style=flat-square&logo=bun" alt="Bun" />
@@ -36,6 +48,16 @@ With `afd`, the daemon noticed in 10ms, restored the file in 184ms, and logged i
 
 ---
 
+## 🚀 Zero-Interference Promise
+
+We built `afd` to protect your flow, not to slow it down.
+
+* **No Performance Hit:** Running as a native background daemon via Bun, `afd` consumes **< 0.1% CPU** and **~40MB RAM**.
+* **Seamless Recovery:** With **sub-millisecond healing**, files are restored before Claude Code can even register a missing context error.
+* **Non-Invasive:** `afd` observes file system events from the OS layer. It never intercepts or modifies Claude Code's internal execution or API calls.
+
+---
+
 ## The One-Command Experience
 
 > **Zero-Config. Total Protection.**
@@ -53,14 +75,14 @@ bun link && afd start
 That's it. One command. `afd` takes over from here:
 
 - **Auto-Injection** — Installs `PreToolUse` hooks into Claude Code silently. No manual config editing.
-- **Sense (Watcher)** — 10ms real-time monitoring of critical configs: `.claude/`, `CLAUDE.md`, `.cursorrules`.
+- **Sense (Watcher)** — 10ms real-time monitoring of critical configs: `.claude/`, `CLAUDE.md`, `.cursorrules`, `.claudeignore`, `.gitignore`.
 - **Auto-Heal** — Silent background repair of missing or corrupted files using the **S.E.A.M cycle**. You won't even notice it happened.
 
 ```
 $ afd start
-  afd daemon started (pid 4812, port 52413)
+  🛡️ afd daemon started (pid 4812, port 52413)
   Hook injected into .claude/hooks.json
-  Watching: .claude/, CLAUDE.md, .cursorrules
+  Watching: .claude/, CLAUDE.md, .cursorrules, .claudeignore, .gitignore
   Ready.
 ```
 
@@ -92,6 +114,20 @@ graph LR
 | **Mutate** | Applies RFC 6902 JSON-Patch to restore the file | < 25ms |
 
 > Full cycle: **< 270ms** from file deletion to full recovery.
+
+### Watch Targets
+
+These files are monitored in real-time. Immune files (IMM-*) are automatically restored on deletion:
+
+| Target | Type | Antibody | Auto-Restore |
+|:-------|:-----|:---------|:-------------|
+| `.claude/` | Directory | IMM-002 (`hooks.json`) | ✅ |
+| `CLAUDE.md` | File | IMM-003 | ✅ |
+| `.claudeignore` | File | IMM-001 | ✅ |
+| `.cursorrules` | File | — | Event logging only |
+| `.gitignore` | File | — | Event logging only |
+
+> Antibodies are **auto-seeded on startup** with each file's current content, and **refreshed on every change** — so restores always reflect the latest version.
 
 ---
 
@@ -158,15 +194,15 @@ afd stop       # Graceful shutdown
 
 ```
 $ rm .claudeignore            # First tap → afd heals it silently
-$ rm .claudeignore            # Second tap within 60s → "You meant it."
-  [afd] Antibody IMM-001 set to dormant. Delete honored.
+$ rm .claudeignore            # Second tap within 30s → "You meant it."
+  [afd] 🫡 Antibody IMM-001 retired. Double-tap detected. Standing down.
 ```
 
 | Scenario | Response |
 |:---------|:---------|
 | Single delete (accident) | Auto-heal + record first tap |
-| Re-delete within 60s (intent) | Antibody goes dormant, deletion respected |
-| Re-delete after 60s | Fresh first tap, heals again |
+| Re-delete within 30s (intent) | Antibody goes dormant, deletion respected |
+| Re-delete after 30s | Fresh first tap, heals again |
 | 3+ deletes in 1s (git checkout) | Mass-event detected, all suppression paused |
 
 ### Vaccine Network (Team Federation)
