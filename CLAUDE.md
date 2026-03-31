@@ -44,12 +44,13 @@ Completely overwrite the contents of the current `CLAUDE.md` with the new archit
 - **Check `afd-lessons.md`:** Before editing immune-critical files (`.claudeignore`, `.claude/hooks.json`, `CLAUDE.md`), check if `afd-lessons.md` exists in the project root. It contains past failure analyses — learn from previous mistakes before repeating them.
 
 ## 5. Documentation Structure
-- **`docs/architecture.md`** — System architecture, module map, S.E.A.M cycle, IPC strategy
-- **`docs/mcp-planning.md`** — MCP stdio integration design and rollout plan
-- **`docs/cli-reference.md`** — Complete CLI command reference
-- **`docs/roadmap.md`** — Version-based roadmap and future plans
-- **`docs/04-*`, `docs/05-*`, `docs/06-*`** — Historical audit documents
-- When writing or updating project documentation, place it in `docs/` under the appropriate file. Do not create standalone markdown files in the project root for documentation purposes.
+- **`docs/INDEX.md`** — AI entry point. Read this first to navigate all documentation.
+- **`docs/spec/`** — System specification (architecture, CLI, MCP protocol). Updated in-place.
+- **`docs/adr/`** — Architecture Decision Records. Append-only.
+- **`docs/release/`** — Per-version audits and bug reports. Append-only.
+- **`docs/roadmap.md`** — Living roadmap (single file, updated in-place).
+- **`docs/i18n/`** — Translations, mirroring parent structure.
+- When writing or updating project documentation, place it in `docs/` under the appropriate subdirectory. Do not create standalone markdown files in the project root for documentation purposes.
 
 ## 6. Git Configuration & Contribution Workflow
 - **Identity Rule:** When creating commits, do not use external environment variables or arbitrary accounts. You must use the user information configured locally in the project (`.git/config`).

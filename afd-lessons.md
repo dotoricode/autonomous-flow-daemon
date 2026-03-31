@@ -19,3 +19,55 @@
   L8: "" → "      }"
   L12: - ""
 ```
+
+### .claudeignore (2026-04-01 02:31:29)
+- **Type**: Unauthorized Deletion
+- **Rule**: Do NOT delete `.claudeignore`. This is an immune-critical file protected by afd. If you need to modify it, edit the content instead of removing the file.
+- **Diff**:
+```
+  (file was deleted — restored from antibody snapshot)
+```
+
+### .claude/hooks.json (2026-04-01 02:31:21)
+- **Type**: Content Corruption
+- **Rule**: When editing `.claude/hooks.json`, ensure valid JSON syntax. Common mistake: JSON Parse error: Unexpected EOF. Always validate JSON structure after editing.
+- **Diff**:
+```
+  L1: "" → "{"
+  L2: "" → "  "hooks": {"
+  L3: + "    "PreToolUse": ["
+  L4: + "      {"
+  L5: + "        "id": "afd-auto-heal","
+  L6: + "        "matcher": "","
+  L7: + "        "command": "afd diagnose --format a2a --auto-heal""
+  L8: + "      }"
+  L9: + "    ]"
+  L10: + "  }"
+  L11: + "}"
+```
+
+### .claudeignore (2026-04-01 02:29:40)
+- **Type**: Unauthorized Deletion
+- **Rule**: Do NOT delete `.claudeignore`. This is an immune-critical file protected by afd. If you need to modify it, edit the content instead of removing the file.
+- **Diff**:
+```
+  (file was deleted — restored from antibody snapshot)
+```
+
+### .claude/hooks.json (2026-04-01 02:29:20)
+- **Type**: Content Corruption
+- **Rule**: When editing `.claude/hooks.json`, ensure valid JSON syntax. Common mistake: JSON Parse error: Unexpected EOF. Always validate JSON structure after editing.
+- **Diff**:
+```
+  L1: "" → "{"
+  L2: "" → "  "hooks": {"
+  L3: + "    "PreToolUse": ["
+  L4: + "      {"
+  L5: + "        "id": "afd-auto-heal","
+  L6: + "        "matcher": "","
+  L7: + "        "command": "afd diagnose --format a2a --auto-heal""
+  L8: + "      }"
+  L9: + "    ]"
+  L10: + "  }"
+  L11: + "}"
+```

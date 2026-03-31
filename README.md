@@ -18,7 +18,7 @@
 ---
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.1.0-blue?style=flat-square" alt="version" />
+  <img src="https://img.shields.io/badge/version-1.3.0-blue?style=flat-square" alt="version" />
   <a href="https://www.npmjs.com/package/autonomous-flow-daemon"><img src="https://img.shields.io/npm/v/autonomous-flow-daemon?style=flat-square&logo=npm&color=cb0000" alt="npm" /></a>
   <img src="https://img.shields.io/badge/runtime-Bun-f472b6?style=flat-square&logo=bun" alt="Bun" />
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="MIT" />
@@ -58,17 +58,20 @@ We built `afd` to protect your flow, not to slow it down.
 
 ---
 
-## ✨ Key Features (v1.1.0)
+## ✨ Key Features (v1.3.0)
 
 | Feature | What it does |
 |:--------|:-------------|
-| **🛡️ S.E.A.M Auto-Heal** | Detects file deletion and restores it in < 270ms — before your AI agent notices |
+| **🛡️ S.E.A.M Auto-Heal** | Detects file deletion/corruption and restores it in < 270ms — before your AI agent notices |
+| **🔒 Quarantine Zone** | Backs up corrupted files to `.afd/quarantine/` before restoring, preserving evidence for analysis |
+| **🧬 Self-Evolution** | Analyzes quarantined failures and writes prevention rules to `afd-lessons.md` — AI learns from its own mistakes |
+| **📊 Hologram Extraction** | Serves 80%+ lighter file skeletons to AI agents via MCP (`afd_hologram`), slashing token costs |
+| **🔌 MCP Integration** | `afd mcp install` auto-registers the daemon as an MCP server — AI agents call `afd_hologram`, `afd_diagnose`, `afd_score` autonomously |
+| **📺 Live Dashboard** | `afd watch` — real-time TUI with SSE event stream, evolution stats, and heal metrics |
 | **🔍 Smart Discovery** | Automatically scans for AI-context files (`.claude/`, `.cursorrules`, `.mcp.json`, etc.) — zero config required |
-| **🏥 Boastful Doctor** | Real-time value tracking: saved tokens, time, and cost — with witty feedback after every heal |
-| **🌐 Auto-Localization** | Seamlessly switches between Korean and English based on your system locale. Or set it: `afd lang ko` |
 | **🧬 Double-Tap Heuristic** | Distinguishes accidents from intent — delete once, afd heals it; delete again within 30s, afd respects your decision |
 | **💉 Vaccine Network** | Export learned antibodies via `afd sync` for cross-project, cross-team immunity |
-| **📊 Hologram Extraction** | Serves 80%+ lighter file skeletons to AI agents, slashing token costs |
+| **🌐 Auto-Localization** | Seamlessly switches between Korean and English based on your system locale |
 
 ---
 
@@ -123,8 +126,8 @@ graph LR
 | Stage | What Happens | Speed |
 |:------|:-------------|:------|
 | **Sense** | Chokidar watcher detects `add`, `change`, `unlink` events | < 10ms |
-| **Extract** | Immune engine runs 3 built-in health checks (IMM-001..003) | < 5ms |
-| **Adapt** | Matches symptom to stored antibody in SQLite (WAL mode) | < 1ms |
+| **Extract** | Generates hologram (type skeleton) for AI context & runs health checks | < 5ms |
+| **Adapt** | Matches symptom to antibody, quarantines corrupted state, selects fix | < 1ms |
 | **Mutate** | Applies RFC 6902 JSON-Patch to restore the file | < 25ms |
 
 > Full cycle: **< 270ms** from file deletion to full recovery.
@@ -157,22 +160,32 @@ Everything you need. Nothing you don't.
 
 | Command | Essence | Intelligence Inside |
 |:--------|:--------|:--------------------|
-| `afd start` | **Ignite** | Daemon spawn + Smart Discovery + Hook injection |
-| `afd fix` | **Diagnose** | Symptom detection & Antibody learning |
-| `afd score` | **Vitals** | Localized health dashboard & Value metrics |
+| `afd start` | **Ignite** | Daemon spawn + Smart Discovery + Hook injection + MCP registration |
+| `afd stop` | **Shutdown** | Shift summary report & Graceful shutdown |
+| `afd score` | **Vitals** | Localized health dashboard with evolution & hologram metrics |
+| `afd fix` | **Diagnose** | Symptom detection with hologram context & Antibody learning |
 | `afd sync` | **Federate** | Vaccine payload export for cross-project immunity |
+| `afd watch` | **Monitor** | Real-time TUI dashboard — live S.E.A.M event stream |
+| `afd doctor` | **Deep Scan** | Comprehensive health analysis with auto-fix recommendations |
+| `afd evolution` | **Learn** | Analyze quarantined failures & generate prevention rules |
+| `afd mcp install` | **Wire** | Register afd as MCP server in project + global config |
+| `afd diagnose` | **Headless** | Machine-readable diagnosis (used by auto-heal hooks) |
+| `afd vaccine` | **Registry** | List, search, install, publish community antibodies |
 | `afd lang` | **Localize** | Switch display language (`afd lang ko` / `afd lang en`) |
-| `afd stop` | **Quarantine** | Shift summary & Graceful shutdown |
 
 ### Quick Reference
 
 ```bash
-afd start      # Start daemon, inject hooks, begin watching
-afd fix        # Scan for issues, auto-patch, learn antibodies
-afd score      # Full diagnostic dashboard (localized)
-afd sync       # Export antibodies to .afd/global-vaccine-payload.json
-afd lang ko    # Switch to Korean / afd lang en for English
-afd stop       # Shift summary + graceful shutdown
+afd start          # Start daemon, inject hooks, begin watching
+afd stop           # Shift summary + graceful shutdown
+afd score          # Full diagnostic dashboard (localized)
+afd fix            # Scan for issues, auto-patch, learn antibodies
+afd sync           # Export antibodies to .afd/global-vaccine-payload.json
+afd watch          # Real-time TUI dashboard with live events
+afd doctor --fix   # Deep analysis + auto-fix
+afd evolution      # Analyze quarantined failures, write lessons
+afd mcp install    # Register MCP server for AI agent integration
+afd lang ko        # Switch to Korean / afd lang en for English
 ```
 
 ---
@@ -240,15 +253,44 @@ afd sync
 
 The payload is sanitized (no absolute paths, no secrets) and portable. Drop it into any project, and `afd` inherits the immunity.
 
-### Hologram Extraction
+### Quarantine Zone (Forensic Backup)
 
-When AI agents request file context, `afd` serves **token-efficient skeletons** — stripping comments and function bodies while preserving the full type signature:
+Before restoring a corrupted or deleted file, `afd` saves the damaged version to `.afd/quarantine/`:
 
 ```
-Original:  2,450 chars → Hologram: 380 chars (84% savings)
+.afd/quarantine/
+  20260401_021028_.claude_hooks.json        # Corrupted JSON (missing brace)
+  20260401_022040_.claudeignore.learned     # Deletion event (already analyzed)
 ```
 
-This keeps your AI agent's context window lean without losing structural understanding.
+This preserves evidence for post-mortem analysis — and powers the Self-Evolution engine.
+
+### Self-Evolution (AI Learns From Mistakes)
+
+```bash
+afd evolution
+```
+
+Analyzes quarantined failures, diffs them against restored originals, and writes prevention rules to `afd-lessons.md`:
+
+```markdown
+### .claude/hooks.json (2026-04-01 02:10:28)
+- **Type**: Content Corruption
+- **Rule**: When editing `.claude/hooks.json`, ensure valid JSON syntax.
+  Common mistake: Expected '}'. Always validate JSON structure after editing.
+```
+
+AI agents read `afd-lessons.md` before editing immune-critical files — turning past failures into future prevention.
+
+### Hologram Extraction (MCP-Powered)
+
+When AI agents need file context, `afd` serves **token-efficient skeletons** via the `afd_hologram` MCP tool:
+
+```
+Original:  8,425 chars → Hologram: 1,193 chars (85.8% savings)
+```
+
+The hologram preserves imports, interfaces, type signatures, and function signatures while stripping all implementation details. AI agents call this automatically before reading large files.
 
 ---
 
@@ -267,30 +309,38 @@ Real-time daemon status in Claude Code's status bar:
 
 ## Plugin / MCP Setup
 
-`afd` can be registered as a **Model Context Protocol (MCP) server** inside Claude Code, allowing the daemon to start automatically when Claude Code launches.
+`afd` provides three MCP tools that AI agents can call autonomously:
 
-### Automatic (recommended)
+| MCP Tool | Purpose |
+|:---------|:--------|
+| `afd_hologram` | Get token-efficient type skeleton of any TS/JS file (80%+ savings) |
+| `afd_diagnose` | Run health diagnosis and get symptoms with hologram context |
+| `afd_score` | Get daemon runtime stats: uptime, heals, hologram savings |
 
-Add to your Claude Code MCP config (`~/.claude/mcp.json` or project-level `.mcp.json`):
+### One-Command Setup (recommended)
+
+```bash
+afd mcp install
+```
+
+This registers the MCP server in both `.mcp.json` (project) and `~/.claude.json` (global). Restart Claude Code to activate.
+
+### Manual Config
+
+Add to your Claude Code MCP config (`.mcp.json`):
 
 ```json
 {
   "mcpServers": {
     "afd": {
       "command": "bun",
-      "args": ["run", "src/cli.ts", "start"]
+      "args": ["run", "src/daemon/server.ts", "--mcp"]
     }
   }
 }
 ```
 
-### Manual
-
-```bash
-afd start   # starts daemon in background, injects hooks
-```
-
-Once registered, Claude Code will display the live status line:
+Once registered, AI agents automatically use `afd_hologram` to read file structures efficiently, and Claude Code's status bar shows:
 
 ```
 🛡️ afd: ON | 🩹 3 Healed | last: IMM-003
@@ -327,7 +377,7 @@ npx @dotoricode/afd start
 
 - **Bun** >= 1.0
 - **OS**: Windows, macOS, Linux
-- **Target**: Claude Code, Cursor (ecosystem auto-detected)
+- **Target**: Claude Code, Cursor, Windsurf, Codex (ecosystem auto-detected)
 
 ---
 

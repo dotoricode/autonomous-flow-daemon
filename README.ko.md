@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.1.0-blue?style=flat-square" alt="version" />
+  <img src="https://img.shields.io/badge/version-1.3.0-blue?style=flat-square" alt="version" />
   <a href="https://www.npmjs.com/package/autonomous-flow-daemon"><img src="https://img.shields.io/npm/v/autonomous-flow-daemon?style=flat-square&logo=npm&color=cb0000" alt="npm" /></a>
   <img src="https://img.shields.io/badge/runtime-Bun-f472b6?style=flat-square&logo=bun" alt="Bun" />
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="MIT" />
@@ -54,17 +54,20 @@
 
 ---
 
-## ✨ 주요 기능 (v1.1.0)
+## ✨ 주요 기능 (v1.3.0)
 
 | 기능 | 설명 |
 |:-----|:-----|
-| **🛡️ S.E.A.M 자율 치유** | 파일 삭제를 감지하고 270ms 이내에 복구 — AI 에이전트가 눈치채기도 전에 |
+| **🛡️ S.E.A.M 자율 치유** | 파일 삭제/손상을 감지하고 270ms 이내에 복구 — AI 에이전트가 눈치채기도 전에 |
+| **🔒 격리 구역 (Quarantine)** | 복구 전에 손상된 파일을 `.afd/quarantine/`에 백업 — 사후 분석용 증거 보존 |
+| **🧬 자가 진화 (Self-Evolution)** | 격리된 실패 사례를 분석하여 `afd-lessons.md`에 방지 규칙 자동 생성 — AI가 스스로 배움 |
+| **📊 홀로그램 추출** | MCP 도구 `afd_hologram`으로 80%+ 가벼운 타입 뼈대를 AI 에이전트에 제공 |
+| **🔌 MCP 통합** | `afd mcp install`로 MCP 서버 자동 등록 — AI가 `afd_hologram`, `afd_diagnose`, `afd_score`를 자율 호출 |
+| **📺 실시간 대시보드** | `afd watch` — SSE 이벤트 스트림, 진화 통계, 치유 지표를 보여주는 실시간 TUI |
 | **🔍 스마트 탐색** | `.claude/`, `.cursorrules`, `.mcp.json` 등 AI 설정 파일을 자동 감지 — 설정 필요 없음 |
-| **🏥 위트 있는 닥터** | 실시간 가치 추적: 절약한 토큰, 시간, 비용을 매 치유마다 위트 있게 알려줍니다 |
-| **🌐 자동 다국어** | 시스템 언어에 따라 한국어/영어를 자동 전환. 직접 설정도 가능: `afd lang ko` |
 | **🧬 더블탭 감지** | 실수와 의도를 구분 — 한 번 지우면 복구, 30초 내 다시 지우면 삭제를 존중 |
 | **💉 백신 네트워크** | `afd sync`로 학습된 항체를 팀 전체에 전파 |
-| **📊 홀로그램 추출** | AI 에이전트에게 80%+ 가벼운 파일 뼈대를 제공해 토큰 비용 절감 |
+| **🌐 자동 다국어** | 시스템 언어에 따라 한국어/영어를 자동 전환 |
 
 ---
 
@@ -119,8 +122,8 @@ graph LR
 | 단계 | 주요 동작 | 처리 속도 |
 |:------|:-----|:-----|
 | **Sense** | Chokidar 와처가 파일의 생성, 변경, 삭제를 즉각 감지 | < 10ms |
-| **Extract** | 면역 엔진이 내장된 3단계 건강 검진 실행 (IMM-001..003) | < 5ms |
-| **Adapt** | SQLite(WAL 모드) DB에서 최적의 복구 항체(Antibody) 매칭 | < 1ms |
+| **Extract** | 홀로그램(타입 뼈대) 생성 + 건강 검진 실행 | < 5ms |
+| **Adapt** | 증상↔항체 매칭, 손상 파일 격리, 수정 전략 선택 | < 1ms |
 | **Mutate** | RFC 6902 JSON-Patch 기술로 원본 파일을 완벽히 복원 | < 25ms |
 
 > **최종 성적표:** 파일 삭제 감지부터 복구 완료까지 **270ms 미만**.
@@ -153,12 +156,18 @@ graph LR
 
 | 명령어 | 역할 | 핵심 지능 |
 |:-------|:-----|:----------|
-| `afd start` | **시동** | 스마트 탐색 + 데몬 가동 + 자동 훅 주입 |
-| `afd fix` | **수술** | 현재 프로젝트 진단 및 새로운 항체 학습 |
-| `afd score` | **대시보드** | 다국어 건강 검진 리포트 & 가치 분석 |
-| `afd sync` | **전파** | 학습된 항체를 백신 파일로 추출 (팀 공유용) |
-| `afd lang` | **언어** | 표시 언어 전환 (`afd lang ko` / `afd lang en`) |
+| `afd start` | **시동** | 스마트 탐색 + 데몬 가동 + 훅/MCP 자동 주입 |
 | `afd stop` | **종료** | 근무 요약 리포트 + 안전한 종료 |
+| `afd score` | **대시보드** | 진화·홀로그램 통계 포함 다국어 건강 검진 |
+| `afd fix` | **수술** | 홀로그램 컨텍스트 기반 진단 및 항체 학습 |
+| `afd sync` | **전파** | 학습된 항체를 백신 파일로 추출 (팀 공유용) |
+| `afd watch` | **모니터** | 실시간 TUI — SSE 이벤트 스트림 대시보드 |
+| `afd doctor` | **정밀 검사** | 종합 건강 분석 + 자동 수정 권고 |
+| `afd evolution` | **학습** | 격리된 실패 분석 및 방지 규칙 생성 |
+| `afd mcp install` | **연결** | MCP 서버를 프로젝트 + 글로벌 설정에 등록 |
+| `afd diagnose` | **헤드리스** | 자동 치유 훅용 기계 판독 진단 |
+| `afd vaccine` | **레지스트리** | 커뮤니티 항체 조회, 설치, 발행 |
+| `afd lang` | **언어** | 표시 언어 전환 (`afd lang ko` / `afd lang en`) |
 
 ---
 
@@ -221,38 +230,81 @@ afd sync
 ```
 이 파일은 정제되어 있어 기밀 정보가 섞이지 않습니다. 다른 프로젝트에 넣기만 하면 `afd`가 해당 프로젝트의 면역력을 즉시 이식받습니다.
 
-### Hologram 추출 (토큰 다이어트)
+### 격리 구역 (Quarantine Zone)
 
-AI 에이전트가 파일 내용을 요구할 때, `afd`는 **뼈대만 남긴 초경량 요약본**을 제공합니다. 주석과 긴 함수 본문은 걷어내고 타입 정의와 구조만 전달하여 **토큰 비용을 80% 이상 절감**합니다.
+파일을 복구하기 전에, 손상된 버전을 `.afd/quarantine/`에 백업합니다:
+
+```
+.afd/quarantine/
+  20260401_021028_.claude_hooks.json        # JSON 괄호 누락된 상태
+  20260401_022040_.claudeignore.learned     # 삭제 이벤트 (분석 완료)
+```
+
+사후 분석용 증거를 보존하며, 자가 진화 엔진의 학습 데이터로 활용됩니다.
+
+### 자가 진화 (Self-Evolution)
+
+```bash
+afd evolution
+```
+
+격리된 실패 사례를 분석하고, 복구된 원본과 비교하여 `afd-lessons.md`에 방지 규칙을 자동 기록합니다:
+
+```markdown
+### .claude/hooks.json (2026-04-01 02:10:28)
+- **Type**: Content Corruption
+- **Rule**: `.claude/hooks.json` 편집 시 반드시 유효한 JSON 구문을 유지할 것.
+  흔한 실수: '}' 누락. 편집 후 항상 JSON 구조를 검증할 것.
+```
+
+AI 에이전트는 면역 파일 편집 전에 `afd-lessons.md`를 읽어 — 과거의 실패를 미래의 예방책으로 전환합니다.
+
+### Hologram 추출 (MCP 기반 토큰 다이어트)
+
+AI 에이전트가 파일 컨텍스트를 필요로 할 때, MCP 도구 `afd_hologram`이 **타입 뼈대만 남긴 초경량 요약본**을 제공합니다:
+
+```
+원본: 8,425 chars → 홀로그램: 1,193 chars (85.8% 절감)
+```
+
+import, interface, 타입 시그니처, 함수 시그니처는 보존하고 구현부는 모두 제거합니다. AI 에이전트가 대용량 파일을 읽기 전에 자동으로 호출합니다.
 
 ---
 
 ## 🔌 Plugin / MCP 설정
 
-`afd`를 **Model Context Protocol (MCP) 서버**로 등록하면 Claude Code가 시작될 때 데몬이 자동으로 실행됩니다.
+`afd`는 AI 에이전트가 자율적으로 호출할 수 있는 3개의 MCP 도구를 제공합니다:
 
-### 자동 설정 (권장)
+| MCP 도구 | 용도 |
+|:---------|:-----|
+| `afd_hologram` | TS/JS 파일의 토큰 효율적 타입 뼈대 반환 (80%+ 절감) |
+| `afd_diagnose` | 건강 진단 실행, 홀로그램 컨텍스트와 함께 증상 반환 |
+| `afd_score` | 데몬 런타임 통계: 가동시간, 치유 횟수, 홀로그램 절감률 |
 
-Claude Code MCP 설정(`~/.claude/mcp.json` 또는 프로젝트 `.mcp.json`)에 추가하세요:
+### 원커맨드 설정 (권장)
+
+```bash
+afd mcp install
+```
+
+`.mcp.json`(프로젝트)과 `~/.claude.json`(글로벌) 양쪽에 MCP 서버를 자동 등록합니다. Claude Code를 재시작하면 활성화됩니다.
+
+### 수동 설정
+
+`.mcp.json`에 직접 추가:
 
 ```json
 {
   "mcpServers": {
     "afd": {
       "command": "bun",
-      "args": ["run", "src/cli.ts", "start"]
+      "args": ["run", "src/daemon/server.ts", "--mcp"]
     }
   }
 }
 ```
 
-### 수동 실행
-
-```bash
-afd start   # 백그라운드 데몬 시작 및 훅 자동 주입
-```
-
-등록 후 Claude Code 상태 표시줄에서 실시간으로 확인할 수 있습니다:
+등록 후 AI 에이전트가 `afd_hologram`으로 파일 구조를 효율적으로 읽고, 상태 표시줄에서 실시간 확인:
 
 ```
 🛡️ afd: ON | 🩹 3 Healed | last: IMM-003
@@ -288,7 +340,7 @@ npx @dotoricode/afd start
 ### 환경 요구 사항
 - **Bun** >= 1.0
 - **OS**: Windows, macOS, Linux 지원
-- **호환 환경**: Claude Code, Cursor 등 (생태계 자동 감지)
+- **호환 환경**: Claude Code, Cursor, Windsurf, Codex (생태계 자동 감지)
 
 ---
 
