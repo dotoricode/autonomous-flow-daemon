@@ -5,3 +5,8 @@ dist/
 .env
 nul/
 .afd-test-tmp/
+
+# Local settings
+.claude/settings.local.json
+.mcp.json
+.bkit/

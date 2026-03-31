@@ -6,10 +6,14 @@
 <p align="center"><strong>AI가 스스로 고치는 개발 환경. 복구까지 단 0.2초.</strong></p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.1.0-blue?style=flat-square" alt="version" />
+  <img src="https://img.shields.io/badge/version-1.0.0-blue?style=flat-square" alt="version" />
   <img src="https://img.shields.io/badge/runtime-Bun-f472b6?style=flat-square&logo=bun" alt="Bun" />
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="MIT" />
   <img src="https://img.shields.io/badge/built%20for-Claude%20Code-7c3aed?style=flat-square" alt="Claude Code" />
+</p>
+
+<p align="center">
+  <a href="README.md">English</a>
 </p>
 
 ---

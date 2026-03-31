@@ -1,14 +1,16 @@
 {
   "name": "autonomous-flow-daemon",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "The Autonomous Immune System for AI Coding Workflows",
   "type": "module",
   "bin": {
     "afd": "./src/cli.ts"
   },
+  "main": "./src/cli.ts",
   "scripts": {
     "start": "bun run src/cli.ts start",
-    "dev": "bun run src/cli.ts"
+    "dev": "bun run src/cli.ts",
+    "test": "bun test"
   },
   "dependencies": {
     "chokidar": "^4.0.3",

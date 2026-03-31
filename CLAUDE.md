@@ -2,6 +2,14 @@
 
 현재 프로젝트의 `CLAUDE.md` 내용을 아래의 새로운 아키텍처 헌법으로 완전히 덮어써줘. 이것은 앞으로 네가 코딩할 때 무조건 지켜야 할 절대 원칙이야.
 
+## Git Configuration
+- **user.name**: dotori
+- **user.email**: high0408@gmail.com
+
+모든 git commit 시 위 설정을 사용한다.
+- Co-Authored-By 등 다른 컨트리뷰터 정보를 절대 추가하지 않는다
+- author/committer는 반드시 dotori만 사용
+
 [새로운 CLAUDE.md 내용]
 # Autonomous Flow Daemon (afd) Architecture Constitution
 
