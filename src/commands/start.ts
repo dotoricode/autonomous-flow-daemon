@@ -72,6 +72,10 @@ export async function startCommand(options?: { mcp?: boolean }) {
         const slResult = adapter.configureStatusLine(process.cwd());
         if (slResult.configured) console.log(`[afd] ${slResult.message}`);
       }
+      if (adapter.registerMcp) {
+        const mcpResult = adapter.registerMcp(process.cwd());
+        if (mcpResult.registered) console.log(`[afd] ${mcpResult.message}`);
+      }
     }
   } else {
     console.error(t(msg.DAEMON_START_FAILED, { path: logPath }));

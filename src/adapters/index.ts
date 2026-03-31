@@ -15,6 +15,7 @@ export interface EcosystemAdapter {
   getHarnessSchema(): HarnessSchema;
   injectHooks?(cwd: string): { injected: boolean; message: string };
   configureStatusLine?(cwd: string): { configured: boolean; message: string };
+  registerMcp?(cwd: string): { registered: boolean; message: string };
 }
 
 const AFD_HOOK_MARKER = "afd-auto-heal";
@@ -120,6 +121,38 @@ export const ClaudeCodeAdapter: EcosystemAdapter = {
     settings.statusLine = { type: "command", command: expectedCommand };
     writeFileSync(settingsPath, JSON.stringify(settings, null, 2), "utf-8");
     return { configured: true, message: "Status line configured with afd integration" };
+  },
+  registerMcp(cwd: string): { registered: boolean; message: string } {
+    const mcpPath = join(cwd, ".mcp.json");
+    const serverScript = "src/daemon/server.ts";
+    const expectedArgs = ["run", serverScript, "--mcp"];
+
+    let config: Record<string, unknown>;
+    if (existsSync(mcpPath)) {
+      try {
+        config = JSON.parse(readFileSync(mcpPath, "utf-8"));
+      } catch {
+        config = {};
+      }
+    } else {
+      config = {};
+    }
+
+    const mcpServers = (config.mcpServers ?? {}) as Record<string, unknown>;
+    const existing = mcpServers.afd as { command?: string; args?: string[] } | undefined;
+
+    if (existing?.command === "bun" &&
+        JSON.stringify(existing.args) === JSON.stringify(expectedArgs)) {
+      return { registered: false, message: "MCP server already registered in .mcp.json" };
+    }
+
+    mcpServers.afd = {
+      command: "bun",
+      args: expectedArgs,
+    };
+    config.mcpServers = mcpServers;
+    writeFileSync(mcpPath, JSON.stringify(config, null, 2), "utf-8");
+    return { registered: true, message: "MCP server 'afd' registered in .mcp.json" };
   },
 };
 
