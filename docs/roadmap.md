@@ -14,9 +14,9 @@
 
 ---
 
-## In Progress
+## Released
 
-### v1.2.0 (Target)
+### v1.2.0
 
 #### Cross-Platform Hardening
 - [x] Platform abstraction (`src/platform.ts`)
@@ -25,34 +25,34 @@
 - [x] Hook command fallback (afd → bunx → npx)
 - [x] Log rotation (5MB, 3 files)
 - [x] LRU snapshot memory management (10MB cap)
-- [ ] Windows real-device verification
+- [x] Windows real-device verification
 
 #### MCP Integration (Phase 113)
-- [ ] JSON-RPC dispatch for `tools/list` and `tools/call`
-- [ ] `afd_diagnose` tool implementation
-- [ ] `afd_score` tool implementation
-- [ ] `afd_hologram` tool implementation
-- [ ] MCP integration tests
+- [x] JSON-RPC dispatch for `tools/list` and `tools/call`
+- [x] `afd_diagnose` tool implementation
+- [x] `afd_score` tool implementation
+- [x] `afd_hologram` tool implementation
+- [x] MCP integration tests
 
 ---
 
-## Planned
+## In Progress
 
-### v1.3.0 (Candidates)
+### v1.3.0
 
 #### Ecosystem Expansion
-- [ ] Cursor adapter: `injectHooks` implementation
-- [ ] Windsurf adapter
-- [ ] Codex adapter
+- [x] Cursor adapter: `injectHooks` implementation
+- [x] Windsurf adapter
+- [x] Codex adapter
 
 #### Advanced Diagnostics
-- [ ] Tree-sitter AST-based semantic diff
-- [ ] Custom diagnostic rule engine
+- [x] AST-based semantic diff (TypeScript compiler API)
+- [x] Custom diagnostic rule engine (`.afd/rules/*.yml`)
 
 #### Vaccine Network
-- [ ] Remote antibody sharing (team sync)
-- [ ] Vaccine registry / central server
+- [x] Remote antibody sharing (`afd sync --push/--pull`)
+- [x] Vaccine registry (`afd vaccine list/search/install/publish`)
 
 #### Developer Experience
-- [ ] `afd watch` — interactive TUI dashboard
-- [ ] `afd doctor` — deep health analysis with recommendations
+- [x] `afd watch` — interactive TUI dashboard (SSE live stream)
+- [x] `afd doctor` — deep health analysis with `--fix`
