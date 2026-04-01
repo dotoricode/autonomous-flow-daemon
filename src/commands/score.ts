@@ -51,6 +51,11 @@ interface SuppressionScore {
   activeTaps: number;
 }
 
+interface DynamicImmuneScore {
+  activeValidators: number;
+  validatorNames: string[];
+}
+
 interface ScoreData {
   uptime: number;
   filesDetected: number;
@@ -63,6 +68,7 @@ interface ScoreData {
   immune: ImmuneScore;
   ecosystem: EcosystemScore;
   suppression: SuppressionScore;
+  dynamicImmune?: DynamicImmuneScore;
 }
 
 // ── ANSI helpers ──
@@ -181,6 +187,24 @@ export async function scoreCommand() {
       out.push(kv(lang === "ko" ? "마지막 치유" : "Last Heal", `${data.immune.lastAutoHeal.id} ${C.dim}(${ago} ago)${C.reset}`));
     }
 
+    // ── Dynamic Immune Synthesis ──
+    if (data.dynamicImmune && data.dynamicImmune.activeValidators > 0) {
+      out.push(`├${line}┤`);
+      out.push(section(lang === "ko" ? "진화 상태 (동적 면역)" : "Evolution (Dynamic Immune)"));
+      out.push(kv(
+        lang === "ko" ? "활성 검증기" : "Validators",
+        `${C.bold}${C.green}${data.dynamicImmune.activeValidators} Active${C.reset}`
+      ));
+      const names = data.dynamicImmune.validatorNames.slice(0, 3).join(", ");
+      const extra = data.dynamicImmune.validatorNames.length > 3
+        ? ` ${C.dim}+${data.dynamicImmune.validatorNames.length - 3} more${C.reset}`
+        : "";
+      out.push(kv(
+        lang === "ko" ? "스크립트" : "Scripts",
+        `${C.dim}${names}${C.reset}${extra}`
+      ));
+    }
+
     // ── Hologram Efficiency ──
     out.push(`├${line}┤`);
     out.push(section(lang === "ko" ? "토큰 효율 (홀로그램)" : "Token Efficiency (Hologram)"));
@@ -204,9 +228,33 @@ export async function scoreCommand() {
       const summary = await daemonRequest<ShiftSummary>("/shift-summary");
       out.push(`├${line}┤`);
       out.push(section(lang === "ko" ? "전달된 가치 (ROI)" : "Value Delivered (ROI)"));
-      out.push(kv(lang === "ko" ? "절약 토큰" : "Tokens Saved", `${C.bold}${C.green}~${fmtNum(summary.totalTokensSaved)}${C.reset}`));
+
+      // Breakdown: Auto-Heal
+      if (summary.healTokensSaved > 0) {
+        out.push(kv(
+          lang === "ko" ? "🩹 치유 절약" : "🩹 Heal Saved",
+          `${C.dim}~${fmtNum(summary.healTokensSaved)} tok / $${summary.healCostSaved.toFixed(2)}${C.reset}`
+        ));
+      }
+
+      // Breakdown: Hologram
+      if (summary.hologramTokensSaved > 0) {
+        out.push(kv(
+          lang === "ko" ? "💎 홀로그램" : "💎 Hologram",
+          `${C.dim}~${fmtNum(summary.hologramTokensSaved)} tok / $${summary.hologramCostSaved.toFixed(2)}${C.reset}`
+        ));
+      }
+
+      // Total
+      out.push(kv(
+        lang === "ko" ? "총 절약 토큰" : "Total Tokens",
+        `${C.bold}${C.green}~${fmtNum(summary.totalTokensSaved)}${C.reset}`
+      ));
       out.push(kv(lang === "ko" ? "절약 시간" : "Time Saved", `${C.green}~${summary.totalMinutesSaved} min${C.reset}`));
-      out.push(kv(lang === "ko" ? "절약 비용" : "Cost Saved", `${C.green}~$${summary.totalCostSaved.toFixed(2)}${C.reset}`));
+      out.push(kv(
+        lang === "ko" ? "총 절약 비용" : "Total Cost",
+        `${C.bold}${C.green}~$${summary.totalCostSaved.toFixed(2)}${C.reset}`
+      ));
       if (summary.suppressionsSkipped > 0) {
         out.push(kv(lang === "ko" ? "억제 횟수" : "Suppressed", `${summary.suppressionsSkipped}`));
       }

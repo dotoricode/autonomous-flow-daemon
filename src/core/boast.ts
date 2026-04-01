@@ -50,6 +50,11 @@ export interface ShiftSummary {
   suppressionsSkipped: number;
   dormantTransitions: number;
   boast: string;
+  // Unified ROI breakdown
+  healTokensSaved: number;
+  healCostSaved: number;
+  hologramTokensSaved: number;
+  hologramCostSaved: number;
 }
 
 /** Build a shift summary from aggregated daemon stats. */
@@ -60,12 +65,24 @@ export function buildShiftSummary(stats: {
   totalFileBytesSaved: number;
   suppressionsSkipped: number;
   dormantTransitions: number;
+  hologramSavedChars?: number;
 }, lang?: SupportedLang): ShiftSummary {
   const l = lang ?? getSystemLanguage();
-  const msg = getMessages(l);
-  const totalTokensSaved = Math.round(stats.totalFileBytesSaved / CHARS_PER_TOKEN);
+  const m = getMessages(l);
+
+  // Auto-Heal ROI
+  const healTokensSaved = Math.round(stats.totalFileBytesSaved / CHARS_PER_TOKEN);
+  const healCostSaved = Math.round(healTokensSaved / 1000 * COST_PER_1K_TOKENS * 100) / 100;
+
+  // Hologram ROI
+  const holoSavedChars = stats.hologramSavedChars ?? 0;
+  const hologramTokensSaved = Math.round(holoSavedChars / CHARS_PER_TOKEN);
+  const hologramCostSaved = Math.round(hologramTokensSaved / 1000 * COST_PER_1K_TOKENS * 100) / 100;
+
+  // Unified totals
+  const totalTokensSaved = healTokensSaved + hologramTokensSaved;
   const totalMinutesSaved = stats.healsPerformed * DEBUG_MINUTES_BASE;
-  const totalCostSaved = Math.round(totalTokensSaved / 1000 * COST_PER_1K_TOKENS * 100) / 100;
+  const totalCostSaved = Math.round((healCostSaved + hologramCostSaved) * 100) / 100;
 
   return {
     uptimeFormatted: formatUptime(stats.uptimeSeconds),
@@ -76,7 +93,11 @@ export function buildShiftSummary(stats: {
     totalCostSaved,
     suppressionsSkipped: stats.suppressionsSkipped,
     dormantTransitions: stats.dormantTransitions,
-    boast: pick(msg.BOAST_SHIFT_END),
+    boast: pick(m.BOAST_SHIFT_END),
+    healTokensSaved,
+    healCostSaved,
+    hologramTokensSaved,
+    hologramCostSaved,
   };
 }
 
