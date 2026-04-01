@@ -76,6 +76,27 @@
 #### Bug Fixes
 - [x] 15 bugs fixed (v1.2 + v1.3 audit): memory leaks, command injection, SSE cleanup, AST diff accuracy
 
+### v1.5.0 — Trust-Builder
+
+#### Hologram L1 (Import-Based Semantic Compression)
+- [x] Import symbol extraction via regex fast-path (`extractImportedSymbols`)
+- [x] `contextFile` parameter on `afd_hologram` MCP tool and `/hologram` HTTP endpoint
+- [x] L1 filtering: imported symbols → full body, others → name-only stub
+- [x] N-Depth Reachability model: L1(직접)=regex, L2/L3=v2.0(Tree-sitter)
+
+#### Antibody Passive Defense
+- [x] `mistake_history` SQLite table with 30-day retention
+- [x] Write-through cache (`mistakeCache: Map<string, MistakeEntry[]>`)
+- [x] `/mistake-history?file=` HTTP endpoint
+- [x] `pastMistakes` injection into PreToolUse a2a hook output (`diagnose --format a2a`)
+
+#### HUD Counter + Reasons
+- [x] `/mini-status` enhanced with `total_defenses` + `defense_reasons` (in-memory, < 200ms)
+- [x] Status bar: `🛡️ [afd] N건 방어 (사유1, 사유2)` format
+
+#### Bug Fixes
+- [x] Windows path normalization in `assertInsideWorkspace()` (backslash → forward slash)
+
 ---
 
 ## Future
