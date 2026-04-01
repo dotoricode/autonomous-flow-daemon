@@ -1,5 +1,5 @@
 import { watch } from "chokidar";
-import { mkdirSync, writeFileSync, unlinkSync, readFileSync, existsSync, watch as fsWatch, readdirSync } from "fs";
+import { mkdirSync, writeFileSync, unlinkSync, readFileSync, existsSync, watch as fsWatch, readdirSync, statSync } from "fs";
 import { resolve, join } from "path";
 import { QUARANTINE_DIR, WATCH_TARGETS, resolveWorkspacePaths } from "../constants";
 import { initDb } from "../core/db";
@@ -261,6 +261,9 @@ export function main(options: DaemonOptions = {}) {
     }
   }
 
+  // ── Self-write tracking: ignore watcher events caused by daemon's own file writes ──
+  const selfWrites = new Set<string>();
+
   seedAntibodies();
 
   // ── Dynamic Immune Synthesis: hot-reload custom validators from .afd/validators/ ──
@@ -472,9 +475,6 @@ export function main(options: DaemonOptions = {}) {
     "CLAUDE.md": "IMM-003",
   };
 
-  // ── Self-write tracking: ignore watcher events caused by daemon's own file writes ──
-  const selfWrites = new Set<string>();
-
   // ── Corruption double-tap: if same file is corruption-restored twice in 30s, stand down ──
   const corruptionTaps = new Map<string, number>();
 
@@ -619,6 +619,85 @@ export function main(options: DaemonOptions = {}) {
     seam("Sense", `${event} → ${path}`);
   });
 
+  // ── Workspace Map: cached project structure for MCP resource ──
+  let workspaceMapCache: string = "";
+  let workspaceMapDirty = true;
+  let mapRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Build a workspace map: file tree with sizes and export signatures */
+  function buildWorkspaceMap(): string {
+    const cwd = process.cwd();
+    const lines: string[] = [`# Workspace Map — ${cwd}`, `# Generated: ${new Date().toISOString()}`, ""];
+
+    function walk(dir: string, prefix: string) {
+      let entries: string[];
+      try { entries = readdirSync(dir).sort(); } catch { return; }
+      for (const entry of entries) {
+        if (entry === "node_modules" || entry === ".afd" || entry === ".git" || entry === "dist" || entry === "coverage") continue;
+        const fullPath = join(dir, entry);
+        try {
+          const st = statSync(fullPath);
+          if (st.isDirectory()) {
+            lines.push(`${prefix}${entry}/`);
+            walk(fullPath, prefix + "  ");
+            continue;
+          }
+          if (!entry.endsWith(".ts") && !entry.endsWith(".js") && !entry.endsWith(".json") && !entry.endsWith(".md")) continue;
+          const sizeKB = (st.size / 1024).toFixed(1);
+          // Extract export signatures for TS/JS files
+          if (/\.[tj]sx?$/.test(entry) && st.size < 100 * 1024) {
+            try {
+              const source = readFileSync(fullPath, "utf-8");
+              const exports = source.match(/export\s+(?:async\s+)?(?:function|const|class|interface|type|enum)\s+(\w+)/g);
+              const sigs = exports ? exports.map(e => e.replace(/^export\s+(async\s+)?/, "").trim()).slice(0, 5).join(", ") : "";
+              const extra = exports && exports.length > 5 ? ` +${exports.length - 5} more` : "";
+              lines.push(`${prefix}${entry}  (${sizeKB}KB)${sigs ? `  → ${sigs}${extra}` : ""}`);
+            } catch {
+              lines.push(`${prefix}${entry}  (${sizeKB}KB)`);
+            }
+          } else {
+            lines.push(`${prefix}${entry}  (${sizeKB}KB)`);
+          }
+        } catch { /* skip */ }
+      }
+    }
+
+    walk(join(cwd, "src"), "  ");
+
+    // Also list root config files
+    lines.push("", "# Root files");
+    for (const f of ["CLAUDE.md", "package.json", ".claudeignore", ".mcp.json"]) {
+      try {
+        const st = statSync(join(cwd, f));
+        lines.push(`  ${f}  (${(st.size / 1024).toFixed(1)}KB)`);
+      } catch { /* not found */ }
+    }
+
+    return lines.join("\n");
+  }
+
+  function getWorkspaceMap(): string {
+    if (workspaceMapDirty || !workspaceMapCache) {
+      workspaceMapCache = buildWorkspaceMap();
+      workspaceMapDirty = false;
+    }
+    return workspaceMapCache;
+  }
+
+  // Mark map dirty on file events (debounced rebuild)
+  function markMapDirty() {
+    workspaceMapDirty = true;
+    if (mapRefreshTimer) clearTimeout(mapRefreshTimer);
+    mapRefreshTimer = setTimeout(() => { getWorkspaceMap(); }, 5000);
+  }
+
+  // Hook into watcher events to invalidate map cache
+  watcher.on("add", () => markMapDirty());
+  watcher.on("unlink", () => markMapDirty());
+
+  // Build initial map
+  getWorkspaceMap();
+
   // ── MCP stdio mode: JSON-RPC over stdin/stdout ──
   if (options.mcp) {
     console.error("[afd] MCP stdio mode — awaiting JSON-RPC on stdin");
@@ -650,6 +729,19 @@ export function main(options: DaemonOptions = {}) {
           required: ["file"],
         },
       },
+      {
+        name: "afd_read",
+        description: "Smart file reader that saves tokens. Files <10KB return full content. Files >=10KB return a structural hologram instead. Use 'startLine' and 'endLine' to read specific line ranges of large files at full fidelity.",
+        inputSchema: {
+          type: "object" as const,
+          properties: {
+            file: { type: "string" as const, description: "Relative or absolute file path" },
+            startLine: { type: "number" as const, description: "Start line number (1-based, inclusive). Use with endLine to read a specific range of large files." },
+            endLine: { type: "number" as const, description: "End line number (1-based, inclusive)." },
+          },
+          required: ["file"],
+        },
+      },
     ];
 
     function mcpResponse(id: unknown, result: unknown) {
@@ -667,8 +759,8 @@ export function main(options: DaemonOptions = {}) {
       if (method === "initialize") {
         mcpResponse(id, {
           protocolVersion: "2024-11-05",
-          capabilities: { tools: {} },
-          serverInfo: { name: "afd", version: "1.2.0" },
+          capabilities: { tools: {}, resources: {} },
+          serverInfo: { name: "afd", version: "1.4.0" },
         });
         return;
       }
@@ -679,6 +771,36 @@ export function main(options: DaemonOptions = {}) {
       // ── tools/list ──
       if (method === "tools/list") {
         mcpResponse(id, { tools: mcpToolDefs });
+        return;
+      }
+
+      // ── resources/list ──
+      if (method === "resources/list") {
+        mcpResponse(id, {
+          resources: [{
+            uri: "afd://workspace-map",
+            name: "Workspace Map",
+            description: "Project file tree with export signatures. Read this first to understand the codebase structure before reading individual files.",
+            mimeType: "text/plain",
+          }],
+        });
+        return;
+      }
+
+      // ── resources/read ──
+      if (method === "resources/read") {
+        const uri = params?.uri as string | undefined;
+        if (uri === "afd://workspace-map") {
+          mcpResponse(id, {
+            contents: [{
+              uri: "afd://workspace-map",
+              mimeType: "text/plain",
+              text: getWorkspaceMap(),
+            }],
+          });
+          return;
+        }
+        mcpError(id, -32602, `Unknown resource: ${uri}`);
         return;
       }
 
@@ -705,7 +827,7 @@ export function main(options: DaemonOptions = {}) {
           });
 
           mcpResponse(id, {
-            content: [{ type: "text", text: JSON.stringify({ ...result, symptoms: enriched }, null, 2) }],
+            content: [{ type: "text", text: JSON.stringify({ ...result, symptoms: enriched }, null, 2), cache_control: { type: "ephemeral" } }],
           });
           return;
         }
@@ -731,7 +853,7 @@ export function main(options: DaemonOptions = {}) {
             },
           };
           mcpResponse(id, {
-            content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+            content: [{ type: "text", text: JSON.stringify(result, null, 2), cache_control: { type: "ephemeral" } }],
           });
           return;
         }
@@ -748,7 +870,63 @@ export function main(options: DaemonOptions = {}) {
             const result = generateHologram(file, source);
             persistHologramStats(result.originalLength, result.hologramLength);
             mcpResponse(id, {
-              content: [{ type: "text", text: result.hologram }],
+              content: [{ type: "text", text: result.hologram, cache_control: { type: "ephemeral" } }],
+            });
+          } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : String(err);
+            mcpError(id, -32603, msg);
+          }
+          return;
+        }
+
+        if (toolName === "afd_read") {
+          const file = args.file as string | undefined;
+          if (!file) {
+            mcpError(id, -32602, "Missing required argument: file");
+            return;
+          }
+          try {
+            const AFD_READ_THRESHOLD = 10 * 1024; // 10KB
+            const absPath = resolve(file);
+            const source = readFileSync(absPath, "utf-8");
+            const sizeKB = (source.length / 1024).toFixed(1);
+            const startLine = args.startLine as number | undefined;
+            const endLine = args.endLine as number | undefined;
+
+            // Line range request — always return verbatim slice
+            if (startLine !== undefined && endLine !== undefined) {
+              const lines = source.split("\n");
+              const start = Math.max(1, Math.floor(startLine)) - 1;
+              const end = Math.min(lines.length, Math.floor(endLine));
+              const slice = lines.slice(start, end)
+                .map((l, i) => `${start + i + 1}\t${l}`)
+                .join("\n");
+              mcpResponse(id, {
+                content: [{ type: "text", text: `// ${file} lines ${start + 1}-${end} (${sizeKB}KB total)\n${slice}`, cache_control: { type: "ephemeral" } }],
+              });
+              return;
+            }
+
+            // Small file — return full content
+            if (source.length < AFD_READ_THRESHOLD) {
+              mcpResponse(id, {
+                content: [{ type: "text", text: source, cache_control: { type: "ephemeral" } }],
+              });
+              return;
+            }
+
+            // Large file — return hologram with advisory
+            const result = generateHologram(file, source);
+            persistHologramStats(result.originalLength, result.hologramLength);
+            const savings = Math.round((1 - result.hologramLength / result.originalLength) * 100);
+            const header = [
+              `⚠️ [afd-Optimizer]: File is ${sizeKB}KB. To save tokens, only the structural hologram is provided (${savings}% reduction).`,
+              `Use afd_read with startLine/endLine to read specific sections at full fidelity.`,
+              `Total lines: ${source.split("\n").length}`,
+              "",
+            ].join("\n");
+            mcpResponse(id, {
+              content: [{ type: "text", text: header + result.hologram, cache_control: { type: "ephemeral" } }],
             });
           } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : String(err);
@@ -829,6 +1007,38 @@ export function main(options: DaemonOptions = {}) {
           const result = generateHologram(file, source);
           persistHologramStats(result.originalLength, result.hologramLength);
           return Response.json(result);
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          return Response.json({ error: msg }, { status: 404 });
+        }
+      }
+
+      if (url.pathname === "/workspace-map") {
+        return new Response(getWorkspaceMap(), { headers: { "Content-Type": "text/plain" } });
+      }
+
+      if (url.pathname === "/read") {
+        const file = url.searchParams.get("file");
+        if (!file) return Response.json({ error: "?file= required" }, { status: 400 });
+        try {
+          const AFD_READ_THRESHOLD = 10 * 1024;
+          const absPath = resolve(file);
+          const source = readFileSync(absPath, "utf-8");
+          const startLine = url.searchParams.get("startLine");
+          const endLine = url.searchParams.get("endLine");
+
+          if (startLine && endLine) {
+            const lines = source.split("\n");
+            const s = Math.max(1, parseInt(startLine, 10)) - 1;
+            const e = Math.min(lines.length, parseInt(endLine, 10));
+            return Response.json({ file, lines: lines.slice(s, e), range: [s + 1, e], totalLines: lines.length });
+          }
+          if (source.length < AFD_READ_THRESHOLD) {
+            return Response.json({ file, content: source, mode: "full" });
+          }
+          const result = generateHologram(file, source);
+          persistHologramStats(result.originalLength, result.hologramLength);
+          return Response.json({ file, hologram: result.hologram, mode: "hologram", originalSize: source.length, totalLines: source.split("\n").length });
         } catch (err: unknown) {
           const msg = err instanceof Error ? err.message : String(err);
           return Response.json({ error: msg }, { status: 404 });
