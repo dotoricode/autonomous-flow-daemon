@@ -97,6 +97,19 @@
 #### Bug Fixes
 - [x] Windows path normalization in `assertInsideWorkspace()` (backslash → forward slash)
 
+### v1.6.0 — Hook Manager
+
+#### Multi-Owner Hook Orchestration
+- [x] `HookOwner` model: afd / omc / user zone classification by id prefix
+- [x] `mergeHooks()`: ownership-aware merge engine with ordering guarantee (afd → omc → user)
+- [x] `detectConflicts()`: matcher-overlap and duplicate-id detection across owners
+- [x] `KNOWN_AFD_HOOKS` canonical set: safe removal on `stop --clean` (preserves user `afd-*` scripts)
+- [x] `afd hooks status` — display all hooks grouped by owner, ordering check, conflict warnings
+- [x] `afd hooks sync` — re-sort hooks.json to correct zone ordering, report changes
+- [x] `ClaudeCodeAdapter.injectHooks` rewired through Hook Manager (correct `Write|Edit|MultiEdit` matcher)
+- [x] `ClaudeCodeAdapter.removeHooks` uses `KNOWN_AFD_HOOKS` for safe targeted removal
+- [x] 28 unit tests covering classification, merge, conflict detection, read/write, summary
+
 ---
 
 ## Future
