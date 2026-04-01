@@ -3,7 +3,7 @@
     "PreToolUse": [
       {
         "id": "afd-auto-heal",
-        "matcher": "",
+        "matcher": "Write|Edit|MultiEdit",
         "command": "afd diagnose --format a2a --auto-heal"
       },
       {
