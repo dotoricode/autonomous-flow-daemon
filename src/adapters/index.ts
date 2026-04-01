@@ -1,6 +1,13 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
 import { resolveHookCommand } from "../platform";
+import {
+  readHooksFile,
+  writeHooksFile,
+  mergeHooks,
+  getAfdDesiredHooks,
+  KNOWN_AFD_HOOKS,
+} from "../core/hook-manager";
 
 export interface HarnessSchema {
   configFiles: string[];
@@ -52,45 +59,27 @@ export const ClaudeCodeAdapter: EcosystemAdapter = {
   },
   injectHooks(cwd: string): { injected: boolean; message: string } {
     const hooksPath = join(cwd, ".claude", "hooks.json");
-    const hookCommand = resolveHookCommand();
-
-    const newHook: HookEntry = {
-      id: AFD_HOOK_MARKER,
-      matcher: "",
-      command: hookCommand,
-    };
-
-    let config: HooksConfig;
-    if (existsSync(hooksPath)) {
-      try {
-        config = JSON.parse(readFileSync(hooksPath, "utf-8"));
-      } catch {
-        config = { hooks: {} };
-      }
-    } else {
-      mkdirSync(dirname(hooksPath), { recursive: true });
-      config = { hooks: {} };
-    }
+    const config = readHooksFile(hooksPath);
 
     if (!config.hooks || Array.isArray(config.hooks) || typeof config.hooks !== "object") {
       config.hooks = {};
     }
     if (!config.hooks.PreToolUse) config.hooks.PreToolUse = [];
 
-    // Check if already injected
-    const existing = config.hooks.PreToolUse.find(
-      (h: HookEntry) => h.id === AFD_HOOK_MARKER
-    );
-    if (existing) {
-      // Update command in case path changed
-      existing.command = hookCommand;
-      writeFileSync(hooksPath, JSON.stringify(config, null, 2), "utf-8");
-      return { injected: false, message: "Auto-heal hook already present (updated)" };
-    }
+    const before = config.hooks.PreToolUse.length;
+    const result = mergeHooks(config.hooks.PreToolUse, getAfdDesiredHooks());
+    config.hooks.PreToolUse = result.merged;
+    writeHooksFile(hooksPath, config);
 
-    config.hooks.PreToolUse.push(newHook);
-    writeFileSync(hooksPath, JSON.stringify(config, null, 2), "utf-8");
-    return { injected: true, message: "Auto-heal hook injected into PreToolUse" };
+    const added = result.changes.added.length > 0;
+    const after = config.hooks.PreToolUse.length;
+    if (added) {
+      return { injected: true, message: "Auto-heal hook injected into PreToolUse" };
+    }
+    return {
+      injected: false,
+      message: `Auto-heal hook already present (${after} hook${after !== 1 ? "s" : ""} total, ordering: afd → omc → user)`,
+    };
   },
   configureStatusLine(cwd: string): { configured: boolean; message: string } {
     const settingsPath = join(cwd, ".claude", "settings.local.json");
@@ -165,11 +154,18 @@ export const ClaudeCodeAdapter: EcosystemAdapter = {
       const config: HooksConfig = JSON.parse(readFileSync(hooksPath, "utf-8"));
       const arr = config.hooks?.PreToolUse;
       if (!arr) return { removed: false, message: "No PreToolUse hooks" };
-      const idx = arr.findIndex((h: HookEntry) => h.id === AFD_HOOK_MARKER);
-      if (idx === -1) return { removed: false, message: "Hook not found" };
-      arr.splice(idx, 1);
-      writeFileSync(hooksPath, JSON.stringify(config, null, 2), "utf-8");
-      return { removed: true, message: "Auto-heal hook removed from PreToolUse" };
+
+      // Only remove hooks that are in the canonical KNOWN_AFD_HOOKS set.
+      // User hooks with an `afd-` prefix (e.g., afd-read-gate) are preserved.
+      const before = arr.length;
+      config.hooks!.PreToolUse = arr.filter(
+        (h: HookEntry) => !KNOWN_AFD_HOOKS.has(h.id ?? "")
+      );
+      const removed = before - config.hooks!.PreToolUse.length;
+      if (removed === 0) return { removed: false, message: "No afd-managed hooks found" };
+
+      writeHooksFile(hooksPath, config);
+      return { removed: true, message: `Removed ${removed} afd-managed hook${removed !== 1 ? "s" : ""} from PreToolUse` };
     } catch {
       return { removed: false, message: "Failed to parse hooks file" };
     }
