@@ -26,6 +26,10 @@
 - [v1.0-audit.md](release/v1.0-audit.md) — v1.0.0-rc full S.E.A.M cycle verification, vaccine payload structure
 - [v1.2-v1.3-bugs.md](release/v1.2-v1.3-bugs.md) — 15 bugs (8 from v1.2, 7 from v1.3), all fixed, 87 tests passing
 
+### bug-report/ — Bug Audit Reports
+- [AUDIT-GUIDE.md](bug-report/AUDIT-GUIDE.md) — Audit process, severity criteria, tag system
+- [2026-04-01-full-audit.md](bug-report/2026-04-01-full-audit.md) — Full codebase audit: 67 findings (5 critical, 15 high, 28 medium, 19 low)
+
 ### Root
 - [roadmap.md](roadmap.md) — Living roadmap: v1.0~v1.3 released, future phases
 
