@@ -14,13 +14,14 @@ import { vaccineCommand } from "./commands/vaccine";
 import { langCommand } from "./commands/lang";
 import { evolutionCommand } from "./commands/evolution";
 import { mcpCommand } from "./commands/mcp";
+import { APP_VERSION } from "./version";
 
 const program = new Command();
 
 program
   .name("afd")
   .description("Autonomous Flow Daemon - The Immune System for AI Workflows")
-  .version("1.3.0");
+  .version(APP_VERSION);
 
 program
   .command("start")
