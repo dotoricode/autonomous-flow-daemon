@@ -33,6 +33,8 @@ Completely overwrite the contents of the current `CLAUDE.md` with the new archit
 - **Never Full-Text:** When analyzing the full context of a file or passing it to another agent, absolutely never pass the raw, full-text source code.
 - **Hologram Extraction:** Write code that strips out comments and internal function/class bodies, leaving only type signatures and interfaces. Extract this **"Hologram" (skeleton)** to reduce token waste by over 80%.
 - **Proactive Hologram (MCP `afd_hologram`):** When you need to understand the structure of a large TypeScript/JSON file (>100 lines), do NOT read the entire file first. Instead, call the MCP tool `afd_hologram` with the file path. This returns a compressed type-signature skeleton that saves 80%+ tokens. Only read the full file if the hologram is insufficient for your task.
+- **[최우선 탐색 규칙]** 프로젝트 구조를 파악할 때는 절대 파일들을 하나씩 Read 하지 마라. 반드시 MCP 리소스인 `afd://workspace-map`을 먼저 읽어서 전체 지도(파일 트리 + export 시그니처)를 확보해라. 이것만으로 대부분의 구조 파악이 완료된다.
+- **[대용량 파일 규칙]** 파일을 읽을 때 네이티브 Read 대신 `afd_read` MCP 도구를 사용하면 프롬프트 캐싱(`cache_control: ephemeral`)이 적용되어 네 컨텍스트 윈도우와 토큰 비용이 획기적으로 절약된다. 10KB 이상 파일은 자동으로 홀로그램(구조 스켈레톤)으로 압축되어 반환되며, 특정 구간이 필요하면 `startLine`/`endLine` 파라미터로 정밀 조회할 수 있다. 적극적으로 `afd_read`를 활용하라.
 
 ## 4.1. Error Recovery Workflow (afd-Assisted Self-Healing)
 - **Reactive Recovery:** If, after you edit a file, the terminal shows an `[afd]` message indicating the file was restored (e.g., "Silent corruption detected", "Restored from antibody snapshot"), you MUST:
