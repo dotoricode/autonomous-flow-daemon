@@ -15,6 +15,7 @@ import { langCommand } from "./commands/lang";
 import { evolutionCommand } from "./commands/evolution";
 import { mcpCommand } from "./commands/mcp";
 import { statsCommand } from "./commands/stats";
+import { hooksCommand } from "./commands/hooks";
 import { APP_VERSION } from "./version";
 import { trackCliCommand } from "./core/telemetry";
 
@@ -108,5 +109,10 @@ program
   .description("Feature usage telemetry dashboard (developer-only)")
   .option("--days <n>", "Number of days to aggregate", "7")
   .action(statsCommand);
+
+program
+  .command("hooks [subcommand]")
+  .description("Hook Manager: inspect and sync hook ordering (afd → omc → user)")
+  .action(hooksCommand);
 
 program.parse();
