@@ -79,7 +79,7 @@ export async function benchmarkCommand(options: { sort?: string; top?: string; j
   for (const filePath of files) {
     try {
       const source = readFileSync(filePath, "utf-8");
-      const { hologram, originalLength, hologramLength, savings } = generateHologram(filePath, source);
+      const { hologram, originalLength, hologramLength, savings } = await generateHologram(filePath, source);
       results.push({
         path: relative(cwd, filePath),
         originalLines: source.split("\n").length,

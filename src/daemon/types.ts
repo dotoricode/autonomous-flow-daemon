@@ -46,6 +46,7 @@ export interface DaemonState {
   suppressionSkippedCount: number;
   dormantTransitions: { antibodyId: string; at: number }[];
   totalFileBytesSaved: number;
+  totalSavedTokens: number;
   fileSnapshots: LruStringMap;
   sseClients: Set<ReadableStreamDefaultController<Uint8Array>>;
   customValidators: Map<string, ValidatorFn>;
@@ -82,7 +83,7 @@ export interface DaemonContext {
   // Helper functions
   seam: (phase: string, msg: string) => void;
   persistHologramStats: (originalChars: number, hologramChars: number) => void;
-  safeHologram: (filePath: string, source: string) => string;
+  safeHologram: (filePath: string, source: string) => Promise<string>;
   getWorkspaceMap: () => string;
   today: () => string;
 

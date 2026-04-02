@@ -31,12 +31,13 @@ const mcpToolDefs = [
   },
   {
     name: "afd_hologram",
-    description: "Generate a token-efficient hologram (type skeleton) for a TypeScript file. Use contextFile for L1 filtering: only symbols imported by the context file get full signatures; others become stubs.",
+    description: "Generate a token-efficient hologram (type skeleton) for a source file (TS, JS, Python). Use contextFile for L1 filtering. Use diffOnly for incremental updates showing only changed declarations.",
     inputSchema: {
       type: "object" as const,
       properties: {
         file: { type: "string" as const, description: "Relative or absolute file path" },
         contextFile: { type: "string" as const, description: "Optional: the file that imports from 'file'. Enables L1 filtering for higher compression." },
+        diffOnly: { type: "boolean" as const, description: "Optional: return only changed declarations since last hologram call (unified-diff format). Saves tokens on repeated reads." },
       },
       required: ["file"],
     },
@@ -65,7 +66,7 @@ function mcpError(id: unknown, code: number, message: string) {
 }
 
 
-function handleMcpRequest(ctx: DaemonContext, req: { id?: unknown; method?: string; params?: Record<string, unknown> }) {
+async function handleMcpRequest(ctx: DaemonContext, req: { id?: unknown; method?: string; params?: Record<string, unknown> }) {
   const { id, method, params } = req;
 
   if (method === "initialize") {
@@ -123,16 +124,16 @@ function handleMcpRequest(ctx: DaemonContext, req: { id?: unknown; method?: stri
       const result = diagnose(known, { raw });
 
       const PROACTIVE_THRESHOLD = 5 * 1024;
-      const enriched = result.symptoms.map((s: { fileTarget: string; [k: string]: unknown }) => {
+      const enriched = await Promise.all(result.symptoms.map(async (s: { fileTarget: string; [k: string]: unknown }) => {
         const snapshot = ctx.state.fileSnapshots.get(s.fileTarget)
           ?? ctx.state.fileSnapshots.get(s.fileTarget.replace(/\//g, "\\"));
         if (!snapshot) return s;
         if (snapshot.length > PROACTIVE_THRESHOLD) {
-          const hologram = ctx.safeHologram(s.fileTarget, snapshot);
+          const hologram = await ctx.safeHologram(s.fileTarget, snapshot);
           return { ...s, hologram, contextNote: `File is ${(snapshot.length / 1024).toFixed(1)}KB — hologram provided to save tokens.` };
         }
         return { ...s, context: snapshot };
-      });
+      }));
 
       mcpResponse(id, {
         content: [{ type: "text", text: JSON.stringify({ ...result, symptoms: enriched }, null, 2), cache_control: { type: "ephemeral" } }],
@@ -173,7 +174,11 @@ function handleMcpRequest(ctx: DaemonContext, req: { id?: unknown; method?: stri
         _assertWs(absPath, ctx.ws.root);
         const source = readFileSync(absPath, "utf-8");
         const contextFile = args.contextFile as string | undefined;
-        const result = generateHologram(file, source, contextFile ? { contextFile: resolve(contextFile) } : undefined);
+        const diffOnly = args.diffOnly === true;
+        const opts: Record<string, unknown> = {};
+        if (contextFile) opts.contextFile = resolve(contextFile);
+        if (diffOnly) opts.diffOnly = true;
+        const result = await generateHologram(file, source, Object.keys(opts).length > 0 ? opts as { contextFile?: string; diffOnly?: boolean } : undefined);
         ctx.persistHologramStats(result.originalLength, result.hologramLength);
         mcpResponse(id, {
           content: [{ type: "text", text: result.hologram, cache_control: { type: "ephemeral" } }],
@@ -216,7 +221,7 @@ function handleMcpRequest(ctx: DaemonContext, req: { id?: unknown; method?: stri
           return;
         }
 
-        const result = generateHologram(file, source);
+        const result = await generateHologram(file, source);
         ctx.persistHologramStats(result.originalLength, result.hologramLength);
         const savings = Math.round((1 - result.hologramLength / result.originalLength) * 100);
         const header = `⚠️ [afd-Optimizer]: File is ${sizeKB}KB. To save tokens, only the structural hologram is provided (${savings}% reduction).\nUse afd_read with startLine/endLine to read specific sections at full fidelity.\nTotal lines: ${source.split("\n").length}\n\n`;

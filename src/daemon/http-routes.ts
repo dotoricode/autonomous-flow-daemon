@@ -41,6 +41,7 @@ export function createHttpHandler(ctx: DaemonContext, cleanup: () => void) {
         last_healed: last,
         total_defenses: ctx.state.autoHealCount,
         defense_reasons: [...reasonSet],
+        saved_tokens_k: Math.round(Math.max(0, ctx.state.hologramStats.totalOriginalChars - ctx.state.hologramStats.totalHologramChars) / 4 / 100) / 10,
       });
     }
 
@@ -58,7 +59,7 @@ export function createHttpHandler(ctx: DaemonContext, cleanup: () => void) {
         _assertWs(absPath, ctx.ws.root);
         const source = readFileSync(absPath, "utf-8");
         const contextFile = url.searchParams.get("contextFile");
-        const result = generateHologram(file, source, contextFile ? { contextFile: resolve(contextFile) } : undefined);
+        const result = await generateHologram(file, source, contextFile ? { contextFile: resolve(contextFile) } : undefined);
         ctx.persistHologramStats(result.originalLength, result.hologramLength);
         return Response.json(result);
       } catch (err: unknown) {
@@ -90,7 +91,7 @@ export function createHttpHandler(ctx: DaemonContext, cleanup: () => void) {
         if (source.length < AFD_READ_THRESHOLD) {
           return Response.json({ file, content: source, mode: "full" });
         }
-        const result = generateHologram(file, source);
+        const result = await generateHologram(file, source);
         ctx.persistHologramStats(result.originalLength, result.hologramLength);
         return Response.json({ file, hologram: result.hologram, mode: "hologram", originalSize: source.length, totalLines: source.split("\n").length });
       } catch (err: unknown) {
@@ -112,19 +113,19 @@ export function createHttpHandler(ctx: DaemonContext, cleanup: () => void) {
       const result = diagnose(known, { raw });
       const PROACTIVE_HOLOGRAM_THRESHOLD = 5 * 1024;
 
-      const enriched = result.symptoms.map((s: { fileTarget: string; [k: string]: unknown }) => {
+      const enriched = await Promise.all(result.symptoms.map(async (s: { fileTarget: string; [k: string]: unknown }) => {
         const snapshot = ctx.state.fileSnapshots.get(s.fileTarget)
           ?? ctx.state.fileSnapshots.get(s.fileTarget.replace(/\//g, "\\"));
         if (!snapshot) return s;
         if (snapshot.length > PROACTIVE_HOLOGRAM_THRESHOLD) {
-          const hologram = ctx.safeHologram(s.fileTarget, snapshot);
+          const hologram = await ctx.safeHologram(s.fileTarget, snapshot);
           return {
             ...s, hologram,
             contextNote: `File is ${(snapshot.length / 1024).toFixed(1)}KB — hologram skeleton provided to save tokens (${Math.round((1 - hologram.length / snapshot.length) * 100)}% reduction).`,
           };
         }
         return { ...s, context: snapshot };
-      });
+      }));
       return Response.json({ ...result, symptoms: enriched });
     }
 

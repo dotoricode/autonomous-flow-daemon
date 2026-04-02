@@ -14,6 +14,7 @@ import { resolve, join } from "path";
 import { QUARANTINE_DIR, WATCH_TARGETS, resolveWorkspacePaths } from "../constants";
 import { initDb } from "../core/db";
 import { generateHologram } from "../core/hologram";
+import { EventBatcher } from "./event-batcher";
 import type { PatchOp } from "../core/immune";
 import { detectEcosystem } from "../adapters/index";
 import { calcHealMetrics, maybeHealBoast, formatHealLog, formatDormantLog } from "../core/boast";
@@ -47,6 +48,7 @@ const state: DaemonState = {
   suppressionSkippedCount: 0,
   dormantTransitions: [],
   totalFileBytesSaved: 0,
+  totalSavedTokens: 0,
   fileSnapshots: new LruStringMap(10 * 1024 * 1024),
   sseClients: new Set(),
   customValidators: new Map(),
@@ -61,9 +63,11 @@ let _cleanupResources: {
   wsMapGetTimer?: () => ReturnType<typeof setTimeout> | null;
   validatorWatcher?: ReturnType<typeof fsWatch>;
   db?: { close(): void };
+  eventBatcher?: EventBatcher;
 } = {};
 
 function cleanup() {
+  try { _cleanupResources.eventBatcher?.destroy(); } catch {}
   try { _cleanupResources.interval && clearInterval(_cleanupResources.interval); } catch {}
   try { const mt = _cleanupResources.wsMapGetTimer?.(); mt && clearTimeout(mt); } catch {}
   try { _cleanupResources.watcher?.close(); } catch {}
@@ -191,6 +195,7 @@ export function main(options: DaemonOptions = {}) {
   function persistHologramStats(originalChars: number, hologramChars: number) {
     state.hologramStats.totalRequests++;
     state.hologramStats.totalOriginalChars += originalChars;
+    state.totalSavedTokens += Math.max(0, Math.floor((originalChars - hologramChars) / 4));
     state.hologramStats.totalHologramChars += hologramChars;
     try {
       const hs = state.hologramStats;
@@ -208,13 +213,9 @@ export function main(options: DaemonOptions = {}) {
     } catch { /* ignore */ }
   }
 
-  function safeHologram(filePath: string, source: string): string {
-    if (!/\.[tj]sx?$/.test(filePath)) {
-      const lines = source.split("\n");
-      return lines.slice(0, 50).join("\n") + (lines.length > 50 ? "\n// … (truncated)" : "");
-    }
+  async function safeHologram(filePath: string, source: string): Promise<string> {
     try {
-      const result = generateHologram(filePath, source);
+      const result = await generateHologram(filePath, source);
       persistHologramStats(result.originalLength, result.hologramLength);
       return result.hologram;
     } catch {
@@ -413,10 +414,31 @@ export function main(options: DaemonOptions = {}) {
     return false;
   }
 
+  // ── Event Batcher (Adaptive Debounce) ──
+  const eventBatcher = new EventBatcher({
+    debounceMs: 300,
+    isImmunePath: (p: string) => {
+      const normalized = p.replace(/\\/g, "/");
+      return normalized in immuneMap;
+    },
+    onImmediate: (event: string, path: string) => handleFileEvent(event, path),
+    onBatch: (events) => {
+      if (events.length > 1) {
+        seam("Sense", `[Batch] Processing ${events.length} events as single batch`);
+      }
+      for (const e of events) handleFileEvent(e.event, e.path);
+    },
+  });
+  _cleanupResources.eventBatcher = eventBatcher;
+
   // ── Watcher Event Handler (S.E.A.M) ──
   watcher.on("all", (event, path) => {
     if (isInternalPath(path)) return;
     if (selfWrites.has(path)) return;
+    eventBatcher.push(event, path);
+  });
+
+  function handleFileEvent(event: string, path: string) {
     const _seamStart = performance.now();
 
     state.filesDetected++;
@@ -512,7 +534,7 @@ export function main(options: DaemonOptions = {}) {
 
     seam("Sense", `${event} → ${path}`);
     trackEvent("seam", event, path, Math.round(performance.now() - _seamStart));
-  });
+  }
 
   // ── Workspace Map ──
   const wsMap = createWorkspaceMap();
