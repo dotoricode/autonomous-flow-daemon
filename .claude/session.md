@@ -20,10 +20,13 @@
 | **Cross-project pattern correlation** | ✅ | `src/core/correlation-engine.ts`, `src/commands/correlate.ts` |
 
 ## ⭐ 다음 단계: v1.8.0 계획
-v1.7.0 정식 릴리스 완료 (2026-04-03). 다음 마일스톤 방향:
-- **MCP Phase 2:** Interactive tools (fix, sync) via MCP
-- **Multi-Agent Coordination:** Cross-daemon communication for monorepo setups
-- **Plugin System:** Third-party validator and adapter plugins
+v1.7.0 정식 릴리스 완료 (2026-04-03). v1.8.0 체크리스트는 `docs/roadmap.md:197` 참조.
+
+## 멀티-세션 협업 프로토콜
+- 세션 식별: `export CLAUDE_SESSION_ID=@Session-1` (각 터미널에서 실행)
+- 작업 점유: `[/] @Session-1` 마커로 docs/roadmap.md 항목 클레임
+- 세션 상태: `.claude/session-lock.md` 참조
+- 이 세션은 **@Session-1 (Coordinator)** 로 등록됨
 
 ## Cross-Project Pattern Correlation (신규 구현)
 

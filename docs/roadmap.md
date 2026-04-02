@@ -192,9 +192,24 @@
 - [x] Rule suggestion engine based on failure history
 - [x] Cross-project pattern correlation (`afd correlate`, `afd suggest --cross`)
 
-### Future Phases
+### v1.8.0 — Ecosystem Expansion
 
-- **MCP Phase 2:** Interactive tools (fix, sync) via MCP
+#### MCP Phase 2 — Interactive Tools
+- [ ] `afd_fix` MCP tool: apply patches interactively via Claude tool call
+- [ ] `afd_sync` MCP tool: push/pull remote vaccine store via MCP
+- [ ] MCP resource `afd://antibodies` — live antibody list via ReadMcpResource
+
+#### Multi-Agent Coordination
+- [ ] Cross-daemon HTTP bridge for monorepo setups (workspace discovery)
+- [ ] Shared antibody namespace across sub-repos (`afd sync --local-mesh`)
+- [ ] Conflict arbitration protocol for concurrent daemon writes
+
+#### Plugin System
+- [ ] Plugin manifest format (`.afd/plugins/*.json`)
+- [ ] Third-party validator adapter API (`ValidatorPlugin` interface)
+- [ ] `afd plugin install <npm-package>` command
+
+### Future Phases (Unscheduled)
+
 - **MCP Phase 3:** Real-time notifications via MCP protocol
-- **Multi-Agent Coordination:** Cross-daemon communication for monorepo setups
-- **Plugin System:** Third-party validator and adapter plugins
+- **Dashboard UI:** Web-based real-time antibody + mistake_history viewer
