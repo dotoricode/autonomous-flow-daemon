@@ -114,26 +114,26 @@
   "hotPaths": [
     {
       "path": "src\\daemon\\server.ts",
-      "accessCount": 35,
-      "lastAccessed": 1775133976926,
-      "type": "file"
-    },
-    {
-      "path": "docs\\roadmap.md",
-      "accessCount": 22,
-      "lastAccessed": 1775137823300,
+      "accessCount": 36,
+      "lastAccessed": 1775138047388,
       "type": "file"
     },
     {
       "path": ".claude\\session.md",
-      "accessCount": 21,
-      "lastAccessed": 1775137802457,
+      "accessCount": 25,
+      "lastAccessed": 1775138456264,
+      "type": "file"
+    },
+    {
+      "path": "docs\\roadmap.md",
+      "accessCount": 23,
+      "lastAccessed": 1775138442121,
       "type": "file"
     },
     {
       "path": "",
-      "accessCount": 16,
-      "lastAccessed": 1775134763642,
+      "accessCount": 18,
+      "lastAccessed": 1775138047094,
       "type": "directory"
     },
     {
@@ -156,8 +156,14 @@
     },
     {
       "path": ".claude\\hooks.json",
-      "accessCount": 13,
-      "lastAccessed": 1775086804952,
+      "accessCount": 14,
+      "lastAccessed": 1775138429662,
+      "type": "file"
+    },
+    {
+      "path": "src\\core\\hologram.ts",
+      "accessCount": 11,
+      "lastAccessed": 1775138302530,
       "type": "file"
     },
     {
@@ -173,16 +179,16 @@
       "type": "file"
     },
     {
-      "path": "src\\core\\hologram.ts",
-      "accessCount": 10,
-      "lastAccessed": 1775136661846,
-      "type": "file"
-    },
-    {
       "path": "src\\core\\db.ts",
       "accessCount": 10,
       "lastAccessed": 1775137538062,
       "type": "file"
+    },
+    {
+      "path": "src",
+      "accessCount": 10,
+      "lastAccessed": 1775138002598,
+      "type": "directory"
     },
     {
       "path": "src\\adapters\\index.ts",
@@ -195,12 +201,6 @@
       "accessCount": 8,
       "lastAccessed": 1775132480702,
       "type": "file"
-    },
-    {
-      "path": "src",
-      "accessCount": 8,
-      "lastAccessed": 1775133932745,
-      "type": "directory"
     },
     {
       "path": "src\\commands\\stats.ts",
