@@ -51,6 +51,68 @@ function extractImportedSymbols(contextSource: string, targetPath: string): Set<
   return symbols;
 }
 
+/** Node types that contain implementation bodies (NOT pure type declarations) */
+const IMPL_NODE_TYPES = new Set([
+  "function_declaration",
+  "generator_function_declaration",
+  "class_declaration",
+  "lexical_declaration",
+  "variable_declaration",
+  "expression_statement",
+]);
+
+/**
+ * Fast pure-type file check: scans only root-level node types (O(n), no deep traversal).
+ * Returns true if every top-level statement is a pure type declaration with no implementation body.
+ */
+function isPureTypeFile(rootChildren: Node[]): boolean {
+  for (const node of rootChildren) {
+    if (IMPL_NODE_TYPES.has(node.type)) return false;
+
+    if (node.type === "export_statement") {
+      // Check what's being exported — if it has an implementation node, it's not pure
+      const inner = node.namedChildren.find(c =>
+        c.type !== "export_clause" && c.type !== "string" && c.type !== "identifier"
+      );
+      if (inner && IMPL_NODE_TYPES.has(inner.type)) return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Get the declared name from any top-level node (exported or not).
+ * Used for L1 symbol filtering.
+ */
+function getDeclarationName(node: Node): string | null {
+  let target = node;
+
+  // Unwrap export_statement
+  if (node.type === "export_statement") {
+    const inner = node.namedChildren.find(c =>
+      c.type === "function_declaration" ||
+      c.type === "generator_function_declaration" ||
+      c.type === "class_declaration" ||
+      c.type === "interface_declaration" ||
+      c.type === "type_alias_declaration" ||
+      c.type === "enum_declaration" ||
+      c.type === "lexical_declaration"
+    );
+    if (!inner) return null;
+    target = inner;
+  }
+
+  const nameNode = target.childForFieldName("name");
+  if (nameNode) return nameNode.text;
+
+  if (target.type === "lexical_declaration") {
+    const declarator = target.namedChildren.find(c => c.type === "variable_declarator");
+    return declarator?.childForFieldName("name")?.text ?? null;
+  }
+
+  return null;
+}
+
 /** Get the exported name from a top-level declaration node */
 function getExportedName(node: Node): string | null {
   // Check if wrapped in export_statement
@@ -279,6 +341,30 @@ export const tsExtractor: LanguageExtractor = {
   grammarName: "typescript",
 
   extract(tree: Tree, source: string, options?: HologramOptions): string[] {
+    const rootChildren = tree.rootNode.namedChildren;
+
+    // === Pure Type File Bypass ===
+    // If all top-level nodes are type declarations (no implementation bodies),
+    // skip extraction entirely and return the original source as-is.
+    if (!options?.symbols && !options?.contextFile && isPureTypeFile(rootChildren)) {
+      return [source];
+    }
+
+    // === L1 Symbol Extraction ===
+    // If specific symbols are requested, pinpoint-extract only those nodes.
+    if (options?.symbols && options.symbols.length > 0) {
+      const symbolSet = new Set(options.symbols);
+      const matched: string[] = [];
+      for (const stmt of rootChildren) {
+        const name = getDeclarationName(stmt);
+        if (name && symbolSet.has(name)) {
+          const line = extractTopLevel(stmt, source);
+          if (line) matched.push(line);
+        }
+      }
+      return matched;
+    }
+
     const lines: string[] = [];
 
     // L1 filtering setup
@@ -293,7 +379,7 @@ export const tsExtractor: LanguageExtractor = {
       }
     }
 
-    for (const stmt of tree.rootNode.namedChildren) {
+    for (const stmt of rootChildren) {
       // L1: filter non-imported exports
       if (importedSymbols && importedSymbols !== "all") {
         const exportedName = getExportedName(stmt);

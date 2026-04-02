@@ -13,6 +13,8 @@ export interface HologramResult {
 export interface HologramOptions {
   contextFile?: string;
   diffOnly?: boolean;
+  /** L1: Extract only these named symbols (interfaces, types, classes, functions) */
+  symbols?: string[];
 }
 
 export interface LanguageExtractor {

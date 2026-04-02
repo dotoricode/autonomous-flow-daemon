@@ -172,10 +172,11 @@ export function main(options: DaemonOptions = {}) {
   try {
     const allMistakes = db.prepare("SELECT file_path, mistake_type, description, timestamp FROM mistake_history ORDER BY timestamp DESC").all() as { file_path: string; mistake_type: string; description: string; timestamp: number }[];
     for (const row of allMistakes) {
-      const cached = state.mistakeCache.get(row.file_path) ?? [];
+      const normalizedPath = row.file_path.replace(/\\/g, "/");
+      const cached = state.mistakeCache.get(normalizedPath) ?? [];
       if (cached.length < 5) {
         cached.push({ mistake_type: row.mistake_type, description: row.description, timestamp: row.timestamp });
-        state.mistakeCache.set(row.file_path, cached);
+        state.mistakeCache.set(normalizedPath, cached);
       }
     }
   } catch { /* crash-only — empty cache is fine */ }

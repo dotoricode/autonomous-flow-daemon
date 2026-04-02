@@ -44,13 +44,18 @@ const mcpToolDefs = [
   },
   {
     name: "afd_read",
-    description: "Smart file reader that saves tokens. Files <10KB return full content. Files >=10KB return a structural hologram instead. Use 'startLine' and 'endLine' to read specific line ranges of large files at full fidelity.",
+    description: "Smart file reader that saves tokens. Files <10KB return full content. Files >=10KB return a structural hologram instead. Use 'startLine'/'endLine' for line ranges, or 'symbols' for pinpoint symbol extraction (L1 mode).",
     inputSchema: {
       type: "object" as const,
       properties: {
         file: { type: "string" as const, description: "Relative or absolute file path" },
         startLine: { type: "number" as const, description: "Start line number (1-based, inclusive). Use with endLine to read a specific range of large files." },
         endLine: { type: "number" as const, description: "End line number (1-based, inclusive)." },
+        symbols: {
+          type: "array" as const,
+          items: { type: "string" as const },
+          description: "L1 mode: extract only these named symbols (interfaces, types, classes, functions). Returns only matching declarations, maximizing token savings.",
+        },
       },
       required: ["file"],
     },
@@ -202,6 +207,10 @@ async function handleMcpRequest(ctx: DaemonContext, req: { id?: unknown; method?
         const rawEnd = args.endLine;
         const startLine = typeof rawStart === "number" && Number.isFinite(rawStart) ? rawStart : undefined;
         const endLine = typeof rawEnd === "number" && Number.isFinite(rawEnd) ? rawEnd : undefined;
+        const rawSymbols = args.symbols;
+        const symbols = Array.isArray(rawSymbols)
+          ? rawSymbols.filter((s): s is string => typeof s === "string")
+          : undefined;
 
         if (startLine !== undefined && endLine !== undefined) {
           const lines = source.split("\n");
@@ -210,6 +219,17 @@ async function handleMcpRequest(ctx: DaemonContext, req: { id?: unknown; method?
           const slice = lines.slice(start, end).map((l, i) => `${start + i + 1}\t${l}`).join("\n");
           mcpResponse(id, {
             content: [{ type: "text", text: `// ${file} lines ${start + 1}-${end} (${sizeKB}KB total)\n${slice}`, cache_control: { type: "ephemeral" } }],
+          });
+          return;
+        }
+
+        // L1 Symbol Extraction: always use hologram engine regardless of file size
+        if (symbols && symbols.length > 0) {
+          const result = await generateHologram(file, source, { symbols });
+          ctx.persistHologramStats(result.originalLength, result.hologramLength);
+          const header = `// [afd L1] ${file} — symbols: [${symbols.join(", ")}]\n\n`;
+          mcpResponse(id, {
+            content: [{ type: "text", text: header + result.hologram, cache_control: { type: "ephemeral" } }],
           });
           return;
         }
