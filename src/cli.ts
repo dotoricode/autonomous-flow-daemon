@@ -16,6 +16,7 @@ import { evolutionCommand } from "./commands/evolution";
 import { mcpCommand } from "./commands/mcp";
 import { statsCommand } from "./commands/stats";
 import { hooksCommand } from "./commands/hooks";
+import { benchmarkCommand } from "./commands/benchmark";
 import { APP_VERSION } from "./version";
 import { trackCliCommand } from "./core/telemetry";
 
@@ -114,5 +115,13 @@ program
   .command("hooks [subcommand]")
   .description("Hook Manager: inspect and sync hook ordering (afd → omc → user)")
   .action(hooksCommand);
+
+program
+  .command("benchmark")
+  .description("Hologram AST compression benchmark across all source files")
+  .option("--sort <key>", "Sort by: savings (default), size, name")
+  .option("--top <n>", "Show only top N files")
+  .option("--json", "Output raw JSON for programmatic use")
+  .action(benchmarkCommand);
 
 program.parse();
