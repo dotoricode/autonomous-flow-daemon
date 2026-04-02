@@ -146,10 +146,10 @@ DELETE FROM mistake_history WHERE timestamp < unixepoch() * 1000 - 30 * 86400000
 - On read (diagnose hook): read from cache (sub-microsecond)
 
 **Acceptance Criteria:**
-- [ ] `initDb()` creates `mistake_history` table with indexes on fresh DB
-- [ ] Existing DBs gain the table on next daemon start (migration-safe)
-- [ ] Auto-heal events are recorded in `mistake_history` with file_path, type, and description
-- [ ] `queryMistakesByFile` returns at most 5 recent entries for a given file path
+- [x] `initDb()` creates `mistake_history` table with indexes on fresh DB
+- [x] Existing DBs gain the table on next daemon start (migration-safe)
+- [x] Auto-heal events are recorded in `mistake_history` with file_path, type, and description
+- [x] `queryMistakesByFile` returns at most 5 recent entries for a given file path
 
 ---
 
@@ -215,11 +215,11 @@ export function generateHologram(
 - Pass through to `generateHologram()`
 
 **Acceptance Criteria:**
-- [ ] `generateHologram("target.ts", source)` without contextFile returns identical output to v1.4
-- [ ] `generateHologram("target.ts", source, { contextFile: "consumer.ts" })` only includes full signatures for symbols imported by consumer.ts
-- [ ] Non-imported exports show name-only stubs with guide text
-- [ ] Compression ratio >= 85% on typical files with contextFile (vs ~80% without)
-- [ ] Invalid/missing contextFile gracefully falls back to L0
+- [x] `generateHologram("target.ts", source)` without contextFile returns identical output to v1.4
+- [x] `generateHologram("target.ts", source, { contextFile: "consumer.ts" })` only includes full signatures for symbols imported by consumer.ts
+- [x] Non-imported exports show name-only stubs with guide text
+- [x] Compression ratio >= 85% on typical files with contextFile (vs ~80% without)
+- [x] Invalid/missing contextFile gracefully falls back to L0
 
 ---
 
@@ -257,11 +257,11 @@ export function generateHologram(
 **3.3** Enhance the auto-heal recording flow: When `diagnose --auto-heal` successfully heals a symptom, POST the mistake details (including `mistake_type` derived from `symptom.patternType` and `description` derived from `symptom.title`) to `/auto-heal/record` with the extended schema from Phase 1.
 
 **Acceptance Criteria:**
-- [ ] `/mistake-history?file=src/core/db.ts` returns relevant history entries
-- [ ] `afd diagnose --format a2a --auto-heal` output includes `pastMistakes` array when history exists
-- [ ] `pastMistakes` entries are human-readable, concise warnings
-- [ ] When no history exists, `pastMistakes` is absent (not empty array) to save tokens
-- [ ] Hook output remains valid JSON parseable by Claude Code
+- [x] `/mistake-history?file=src/core/db.ts` returns relevant history entries
+- [x] `afd diagnose --format a2a --auto-heal` output includes `pastMistakes` array when history exists
+- [x] `pastMistakes` entries are human-readable, concise warnings
+- [x] When no history exists, `pastMistakes` is absent (not empty array) to save tokens
+- [x] Hook output remains valid JSON parseable by Claude Code
 
 ---
 
@@ -292,11 +292,11 @@ export function generateHologram(
 - Korean locale variant: `[afd] {count}件 防御 ({reasons})`  — keep Korean as default per existing spec format `3건 방어`
 
 **Acceptance Criteria:**
-- [ ] `/mini-status` returns `defense_reasons` and `total_defenses` alongside existing fields
-- [ ] HUD shows `[afd] 3건 방어 (타입 불일치, 파일 삭제 방지, 무한 루프)` format when defenses exist
-- [ ] HUD shows `[afd] ON` when no defenses have occurred
-- [ ] HUD fetch still completes within 200ms timeout (existing AbortSignal.timeout)
-- [ ] Existing statusline fields (model, context, rate, cost, branch) are unaffected
+- [x] `/mini-status` returns `defense_reasons` and `total_defenses` alongside existing fields
+- [x] HUD shows `[afd] 3건 방어 (타입 불일치, 파일 삭제 방지, 무한 루프)` format when defenses exist
+- [x] HUD shows `[afd] ON` when no defenses have occurred
+- [x] HUD fetch still completes within 200ms timeout (existing AbortSignal.timeout)
+- [x] Existing statusline fields (model, context, rate, cost, branch) are unaffected
 
 ---
 
@@ -325,10 +325,10 @@ export function generateHologram(
 - Measure full S.E.A.M cycle with mistake_history recording (must be < 270ms)
 
 **Acceptance Criteria:**
-- [ ] All new tests pass with `bun test`
-- [ ] All existing tests pass unchanged
-- [ ] No performance regression: S.E.A.M < 270ms, single file < 100ms
-- [ ] Hologram L1 achieves >= 85% compression on test fixtures
+- [x] All new tests pass with `bun test`
+- [x] All existing tests pass unchanged
+- [x] No performance regression: S.E.A.M < 270ms, single file < 100ms
+- [x] Hologram L1 achieves >= 85% compression on test fixtures
 
 ---
 

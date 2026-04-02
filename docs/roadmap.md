@@ -164,6 +164,7 @@
 - [x] `mistake_history` 보존 기간 결정 — 90일 (`db.ts:97` purge threshold 30d → 90d)
 - [x] Barrel file L1 support 결정 — defer to v2.0, current L0 fallback is final for v1.x
 - [x] `file_path` 정규화 전략 결정 — workspace-relative POSIX forward-slash (`src/core/db.ts`)
+- [x] `.omc/plans/afd-v1.5-trust-builder.md` 체크박스 전체 동기화 (23개 `[x]`, plan↔roadmap 완전 일치)
 
 ---
 

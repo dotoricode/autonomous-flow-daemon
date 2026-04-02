@@ -70,14 +70,25 @@
   - Q4: barrel file L1 → **v2.0 defer**, L0 fallback final for v1.x
   - Q5: file_path → **workspace-relative POSIX** (`src/core/db.ts` 형식)
 
-## ⭐ 다음 최우선 과제 (P1): Q3 결정 코드 반영
-- `src/core/db.ts:97` — purge threshold `30 * 86400000` → `90 * 86400000`
-- 영향 범위: 1줄 변경, 테스트 불필요 (숫자 상수 변경)
+## 완료된 P1 작업 (추가 2)
+- ✅ **Q3 코드 반영** — `db.ts:97` purge threshold 30d→90d (commit:9c588a4 포함)
+- ✅ **v1.5 계획서 체크박스 갱신** — `.omc/plans/afd-v1.5-trust-builder.md` 전체 23개 `[x]` 완료
+  - v1.5 plan document successfully synchronized with actual implementation status.
+
+## 현재 상태
+- 버전: v1.6.2 (Go Extractor + Architecture Decisions)
+- 모든 v1.x 계획 문서 상태: 완전 동기화
+- 모든 테스트: 154/154 통과
+- Working tree: clean
+
+## ⭐ 다음 최우선 과제 (P1): v1.7 착수 판단
+- 모든 v1.5/v1.6.x 클린업 완료 → v1.7.0 Collective Intelligence 진입 가능
+- v1.7 스코프: Remote vaccine store, Team antibody federation
+- 또는: Rust extractor 추가 (tree-sitter-rust WASM, Go extractor 패턴 그대로 적용)
 
 ## 기타 작업 후보 (P2~P3)
-- v1.5 계획서 체크박스 갱신 (코드 완료, 문서 미반영)
-- Rust extractor 추가 (tree-sitter-rust WASM, Go extractor 패턴 참조)
-- v1.7.0 Collective Intelligence 구현 착수
+- Rust extractor 추가
+- v1.7.0 Collective Intelligence 구현 착수 (Remote vaccine store → Team federation)
 
 ## 기억할 사항
 - web-tree-sitter는 named export: `import { Parser, Language } from "web-tree-sitter"`
