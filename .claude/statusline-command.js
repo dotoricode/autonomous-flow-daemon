@@ -1,10 +1,6 @@
-#!/usr/bin/env node
 'use strict';
-import { createRequire } from 'module';
-import { fileURLToPath } from 'url';
-import { dirname as _dirname } from 'path';
-const require = createRequire(import.meta.url);
-const __dirname = _dirname(fileURLToPath(import.meta.url));
+const fs   = require('fs');
+const path = require('path');
 
 // Claude Code statusLine — stdin으로 session JSON 수신
 // Manual run (TTY) or no piped data → default output without hanging
@@ -26,14 +22,11 @@ function render(data) {
   if      (usedPct >= 80) ctxIcon = '🔴';
   else if (usedPct >= 50) ctxIcon = '🟡';
 
-  // 출력 조합 — ctxIdx 기억해서 afd 데이터 오면 절약률 인라인 추가
   const parts = [];
-  let ctxIdx = -1;
 
   if (model) parts.push(model.replace(/\s*\([^)]*\)\s*/g, '').trim());
 
   if (usedPct != null) {
-    ctxIdx = parts.length;
     parts.push(`${ctxIcon} ctx ${usedPct}%`);
   }
 
@@ -42,15 +35,12 @@ function render(data) {
     parts.push(`${rateIcon}rate ${rate5h}%`);
   }
 
-  // afd daemon status
   function finish() {
     console.log(parts.length ? parts.join(' │ ') : 'Autonomous Flow Daemon');
     process.exit(0);
   }
 
   try {
-    const fs = require('fs');
-    const path = require('path');
     const portFile = path.resolve(__dirname, '..', '.afd', 'daemon.port');
 
     if (!fs.existsSync(portFile)) {
@@ -66,7 +56,7 @@ function render(data) {
     })
       .then(r => r.json())
       .then(d => {
-        const sessionSavedK = d.session_saved_tokens_k || 0;
+        const sessionSavedK   = d.session_saved_tokens_k || 0;
         const sessionSavedRaw = sessionSavedK * 1000;
         const sessionPotential = totalUsed + sessionSavedRaw;
         const ctxSavePct = sessionPotential > 0 && sessionSavedRaw > 0
@@ -82,8 +72,8 @@ function render(data) {
         }
 
         // 일반 요약: 방어 건수 + ctx/tok 절약률 — "🛡️ 3건 (ctx↓25% tok↓52%)"
-        const defenseText = d.total_defenses > 0 ? `${d.total_defenses}건` : 'ON';
-        const ctxSavePct2 = ctxSize > 0 && sessionSavedRaw > 0
+        const defenseText  = d.total_defenses > 0 ? `${d.total_defenses}건` : 'ON';
+        const ctxSavePct2  = ctxSize > 0 && sessionSavedRaw > 0
           ? Math.round(sessionSavedRaw / ctxSize * 100)
           : 0;
         const savingText = (ctxSavePct2 > 0 || ctxSavePct > 0)
