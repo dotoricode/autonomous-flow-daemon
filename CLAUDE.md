@@ -105,3 +105,12 @@ To avoid token waste and context pollution, only invoke subagents from the appro
 
 **Disabled MCP tools (require user approval if called):**
 `python_repl`, `ast_grep_search`, `ast_grep_replace`, `lsp_code_actions`, `lsp_code_action_resolve`, `lsp_prepare_rename`, `lsp_servers`
+
+**Disabled MCP servers (this project):**
+`playwright`, `shadcn-ui`, `sqlite`, `memory`, `fetch`, `sequential-thinking`, `telegram` — afd 프로젝트에서 사용하지 않는 서버. 토큰 절약을 위해 비활성화됨.
+
+## 8. OMC Hook Discipline
+- OMC의 MAGIC KEYWORD 훅은 `UserPromptSubmit` 단계에서 키워드를 감지하여 스킬을 자동 호출한다.
+- **오작동 방지:** 일반 대화에서 스킬 키워드와 겹치는 단어(예: "deep", "interview", "analyze")가 포함되면 의도치 않은 스킬이 트리거될 수 있다.
+- **대응:** 오작동 발생 시 `OMC_SKIP_HOOKS=UserPromptSubmit`을 환경변수로 설정하거나, 해당 턴에서 스킬 호출을 무시하라.
+- **afd MCP 연결 복구:** 세션 중 `afd` MCP가 끊기면 `/mcp` 명령으로 재연결하라. `afd_read`(프롬프트 캐싱)와 `afd_hologram`(토큰 압축)은 이 프로젝트의 핵심 토큰 절약 도구다.

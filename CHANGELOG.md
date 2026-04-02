@@ -7,6 +7,45 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.5.0] - 2026-04-02 — "Trust-Builder"
+
+> The immune system now speaks. Three pillars that make afd's defenses visible, self-improving, and smarter.
+
+### Added
+
+- **Hologram L1 — Import-Based Semantic Compression**
+  - New optional `contextFile` parameter on `afd_hologram` MCP tool and `/hologram` HTTP endpoint
+  - `extractImportedSymbols()` function: regex fast-path parsing of named imports, default imports, and namespace imports from the context file
+  - L1 filtering in `generateHologram()`: directly imported symbols receive full type signatures; non-imported exports are reduced to name-only stubs with guide text `// details omitted — read directly if needed`
+  - Namespace imports (`import * as X`) trigger full L0 hologram (safe default, no false filtering)
+  - Silent fallback to L0 when `contextFile` is missing, unreadable, or yields zero import results
+  - Compression target: 85%+ with contextFile (vs ~80% L0 baseline)
+  - L1 is MCP/HTTP path only — S.E.A.M hot path remains L0 to protect the 270ms budget
+
+- **Antibody Passive Defense — Mistake History Injection**
+  - New `mistake_history` SQLite table: `file_path`, `mistake_type`, `description` (max 200 chars), `antibody_id`, `timestamp`
+  - Indexes on `file_path` and `timestamp` for sub-millisecond query performance
+  - Write-through cache: `mistakeCache: Map<string, MistakeEntry[]>` loaded on daemon startup, updated on every insert
+  - Per-file cap of 5 most recent entries enforced at write time
+  - 30-day TTL purge on daemon startup (consistent with `telemetry` table pattern)
+  - Direct DB insert on auto-heal events (not via HTTP POST): records `mistake_type` from `symptom.patternType` and `description` from `symptom.title`
+  - New GET `/mistake-history?file=<path>` HTTP endpoint (returns max 5 entries, most recent first)
+  - `pastMistakes` field injected into `afd diagnose --format a2a` output on both the healthy path (proactive warning) and the auto-heal path (reactive)
+  - `pastMistakes` is omitted entirely when no history exists (zero token overhead)
+  - Path normalization: `file_path` stored with forward slashes (cross-platform safe)
+
+- **HUD Defense Counter + Reasons**
+  - `/mini-status` endpoint enhanced with `total_defenses: number` and `defense_reasons: string[]` (in-memory only, no DB query — always under 200ms)
+  - `defense_reasons` derived from in-memory `state.autoHealLog` (capped at 100 entries), returning up to 3 most recent unique `mistake_type` values
+  - Status bar format: `[afd] {N}건 방어 ({reason1}, {reason2}, ...)` when defenses exist; `[afd] ON` when none
+  - Existing `healed_count` and `last_healed` fields preserved for backward compatibility
+
+### Fixed
+
+- **Windows path normalization in `assertInsideWorkspace()`**: backslash (`\`) separators in Windows paths are now normalized to forward slashes before workspace boundary checks, fixing false-positive "outside workspace" errors on Windows
+
+---
+
 ## [1.0.0] - 2026-03-31 — "The Immortal Flow"
 
 > [afd] 🛡️ AI agent deleted '.claudeignore' | 🩹 Self-healed in 184ms | Context preserved.
