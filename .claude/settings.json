@@ -1,7 +1,7 @@
 {
   "statusLine": {
     "type": "command",
-    "command": "node D:/00_work/autonomous-flow-daemon/.claude/statusline-command.js"
+    "command": "node .claude/statusline-command.js"
   },
   "permissions": {
     "allow": [

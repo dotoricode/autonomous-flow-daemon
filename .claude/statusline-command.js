@@ -26,15 +26,15 @@ function render(data) {
   if      (usedPct >= 80) ctxIcon = '🔴';
   else if (usedPct >= 50) ctxIcon = '🟡';
 
-  // 출력 조합
+  // 출력 조합 — ctxIdx 기억해서 afd 데이터 오면 절약률 인라인 추가
   const parts = [];
+  let ctxIdx = -1;
 
   if (model) parts.push(model.replace(/\s*\([^)]*\)\s*/g, '').trim());
 
   if (usedPct !== undefined) {
-    const kUsed = Math.round(totalUsed / 1000);
-    const kMax  = Math.round(ctxSize  / 1000);
-    parts.push(`${ctxIcon} ctx ${usedPct}% (${kUsed}k/${kMax}k)`);
+    ctxIdx = parts.length;
+    parts.push(`${ctxIcon} ctx ${usedPct}%`);
   }
 
   if (rate5h !== undefined) {
@@ -66,19 +66,21 @@ function render(data) {
     })
       .then(r => r.json())
       .then(d => {
-        const defenseText = d.total_defenses > 0 ? `${d.total_defenses}건 방어` : 'ON';
         const sessionSavedK = d.session_saved_tokens_k || 0;
-
         const sessionSavedRaw = sessionSavedK * 1000;
         const sessionPotential = totalUsed + sessionSavedRaw;
         const ctxSavePct = sessionPotential > 0 && sessionSavedRaw > 0
           ? Math.round(sessionSavedRaw / sessionPotential * 100)
           : 0;
 
-        const savedText = sessionSavedK > 0
-          ? ` (⬇️ ${sessionSavedK}k 절약, ctx -${ctxSavePct}%)`
-          : '';
-        parts.push(`🛡️ afd: ${defenseText}${savedText}`);
+        // 절약률을 ctx 바로 옆에 인라인으로 — "🟢 ctx 23% ↓15%"
+        if (ctxIdx >= 0 && ctxSavePct > 0) {
+          parts[ctxIdx] += ` ↓${ctxSavePct}%`;
+        }
+
+        // afd 파트: 방어 건수만 간결하게
+        const defenseText = d.total_defenses > 0 ? `${d.total_defenses}건` : 'ON';
+        parts.push(`🛡️ ${defenseText}`);
         finish();
       })
       .catch(() => {
