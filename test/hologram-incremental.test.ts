@@ -84,7 +84,7 @@ describe("Incremental Hologram (diff-only)", () => {
 
   test("unknown extension with diffOnly returns L0", async () => {
     const source = `fn main() {}`;
-    const result = await generateHologram("incr.rs", source, { diffOnly: true });
+    const result = await generateHologram("incr.xyz", source, { diffOnly: true });
     expect(result.hologram).toBe(source);
     expect(result.savings).toBe(0);
   });

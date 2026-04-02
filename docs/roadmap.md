@@ -166,6 +166,16 @@
 - [x] `file_path` 정규화 전략 결정 — workspace-relative POSIX forward-slash (`src/core/db.ts`)
 - [x] `.omc/plans/afd-v1.5-trust-builder.md` 체크박스 전체 동기화 (23개 `[x]`, plan↔roadmap 완전 일치)
 
+### v1.6.3 — Rust Language Support
+
+#### Rust Extractor
+- [x] `src/core/hologram/rust-extractor.ts` — tree-sitter-rust WASM 기반 Rust 파싱
+- [x] 추출 대상: use, mod, struct(fields), enum(variants), trait(signatures), type alias, impl(method stubs), fn
+- [x] impl Trait for Type 및 generic impl 헤더 정확 추출
+- [x] 11개 테스트 (`test/hologram-rust.test.ts`) 추가, 전체 165/165 통과
+- [x] `tree-sitter-rust@0.24.0` dependencies에 추가
+- [x] 기존 `.rs` L0 fallback 테스트 → `.xyz` unknown extension으로 교정
+
 ---
 
 ## Future

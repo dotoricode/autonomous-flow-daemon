@@ -131,7 +131,7 @@ def process(path: str) -> Optional[str]:
 
   test("Unknown extension returns L0 (full source)", async () => {
     const source = `fn main() { println!("hello"); }`;
-    const result = await generateHologram("test.rs", source);
+    const result = await generateHologram("test.xyz", source);
     expect(result.hologram).toBe(source);
     expect(result.savings).toBe(0);
     expect(result.language).toBeUndefined();

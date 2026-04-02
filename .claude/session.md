@@ -81,14 +81,26 @@
 - 모든 테스트: 154/154 통과
 - Working tree: clean
 
-## ⭐ 다음 최우선 과제 (P1): v1.7 착수 판단
-- 모든 v1.5/v1.6.x 클린업 완료 → v1.7.0 Collective Intelligence 진입 가능
-- v1.7 스코프: Remote vaccine store, Team antibody federation
-- 또는: Rust extractor 추가 (tree-sitter-rust WASM, Go extractor 패턴 그대로 적용)
+## ✅ HUD Dynamic Token Savings Directive 검토 완료 (2026-04-02)
+- Directive 요청 사항(타이포 수정, 하드코딩 → 동적 계산, 파이프라인 연결) 모두 **이미 구현됨**
+- `persistHologramStats()` → `hologramStats` → `/mini-status` `saved_tokens_k` → statusline delta 계산 전 구간 정상
+- statusline은 매 렌더링마다 실시간 fetch, 세션 시작 0k → afd_read/hologram 처리 시 즉시 증가
 
-## 기타 작업 후보 (P2~P3)
-- Rust extractor 추가
-- v1.7.0 Collective Intelligence 구현 착수 (Remote vaccine store → Team federation)
+## 완료된 P1 작업 (추가 3)
+- ✅ **Rust extractor 구현** (`src/core/hologram/rust-extractor.ts`)
+  - tree-sitter-rust@0.24.0 WASM, use/mod/struct/enum/trait/type/impl/fn 추출
+  - 11개 신규 테스트, 전체 165/165 통과
+  - 기존 `.rs` L0 fallback 테스트 `.xyz`로 교정
+
+## 현재 상태
+- 버전: v1.6.3 (Rust Extractor)
+- 홀로그램 지원 언어: TypeScript/JS (full), Python (L0), Go (full), **Rust (full)**
+- 모든 테스트: 165/165 통과
+
+## ⭐ 다음 최우선 과제: v1.7.0 Collective Intelligence 착수
+- 모든 언어 커버리지 확보 완료 (TS/Go/Rust)
+- 첫 번째 v1.7 항목: Remote vaccine store (`afd sync --remote <url>`)
+- 참조: `docs/roadmap.md` v1.7.0 섹션
 
 ## 기억할 사항
 - web-tree-sitter는 named export: `import { Parser, Language } from "web-tree-sitter"`
