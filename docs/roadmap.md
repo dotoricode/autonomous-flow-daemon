@@ -130,6 +130,25 @@
 - [x] P1: hologram 마이그레이션 `db.transaction()` 원자성 보장
 - [x] P1: `findAntibodyById` prepared statement 핫 패스에서 초기화 블록으로 이동
 
+### v1.6.1 — Hologram Precision Engine
+
+#### Smart Bypass (순수 타입 파일 우회)
+- [x] `isPureTypeFile()`: 최상위 AST 노드 타입만 O(n) 스캔 → 구현부 없는 파일 즉시 반환
+- [x] 판정 기준: `type_alias_declaration`, `interface_declaration`, `export_statement`(선언형만) 조합
+- [x] 1~2ms 이내 판정 보장 (깊은 트리 탐색 없음)
+- [x] 순수 타입 파일 절감률 0% — 압축 불필요 파일에 연산 낭비 제거
+
+#### L1 Symbol Extraction (심볼 핀셋 추출)
+- [x] `HologramOptions`에 `symbols?: string[]` 파라미터 추가
+- [x] `getDeclarationName()`: export 래핑 언래핑 포함 범용 심볼명 추출
+- [x] 지정 심볼만 AST에서 핀셋 추출 — 전체 홀로그램 대신 필요한 선언만 반환
+- [x] `afd_read` MCP 스키마에 `symbols` 파라미터 추가 (선택적, 완전 하위 호환)
+- [x] 파일 크기와 무관하게 심볼 지정 시 즉시 추출 모드 진입
+- [x] 검증: `DaemonState` 단독 조회 → 10.8% → **78.8%** 절감 (7.3배 향상)
+
+#### Bug Fixes
+- [x] `mistakeCache` warm-up 경로 정규화 — Windows 백슬래시 → 포워드 슬래시
+
 ---
 
 ## Future
