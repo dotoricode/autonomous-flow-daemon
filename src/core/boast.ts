@@ -1,9 +1,7 @@
 /**
  * Boastful Doctor — Gamification & Delightful Logging
  *
- * Lightweight value calculations that stay well under the 270ms budget.
- * All math is O(1) — no I/O, no async.
- * All strings are localized via the i18n dictionary.
+ * O(1) math only — no I/O, no async. All strings localized via i18n.
  */
 
 import { getSystemLanguage } from "./locale";
@@ -13,13 +11,8 @@ import type { MessageDict } from "./i18n/messages";
 
 // ── Token & Cost Estimation ──
 
-/** Rough chars-per-token ratio for code (conservative estimate) */
 const CHARS_PER_TOKEN = 3.5;
-
-/** Average cost per 1K input tokens (Claude Sonnet ballpark) */
 const COST_PER_1K_TOKENS = 0.003;
-
-/** Estimated minutes a developer spends debugging a missing config */
 const DEBUG_MINUTES_BASE = 8;
 const DEBUG_MINUTES_PER_KB = 2;
 
@@ -201,6 +194,7 @@ export function formatValueSection(s: ShiftSummary, lang?: SupportedLang): strin
 // ── Helpers ──
 
 function pick<T>(arr: T[]): T {
+  if (arr.length === 0) return "" as unknown as T;
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
