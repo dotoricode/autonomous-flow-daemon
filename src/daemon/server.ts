@@ -350,7 +350,7 @@ export function main(options: DaemonOptions = {}) {
       const healMs = Math.round(performance.now() - t0);
       state.autoHealCount++;
       state.totalFileBytesSaved += bytesWritten;
-      state.autoHealLog.push({ id: antibodyId, at: Date.now() });
+      state.autoHealLog.push({ id: antibodyId, at: Date.now(), file: fileTarget.split("/").pop() ?? fileTarget, healMs });
       trackEvent("immune", "heal_hit", JSON.stringify({ antibodyId, fileTarget, bytesWritten, healMs }));
       recordMistake(fileTarget, "file-deleted", `File deleted and restored via antibody ${antibodyId}`, antibodyId);
       if (state.autoHealLog.length > 100) state.autoHealLog.shift();

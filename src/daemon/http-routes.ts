@@ -35,12 +35,19 @@ export function createHttpHandler(ctx: DaemonContext, cleanup: () => void) {
         }
         if (reasonSet.size >= 3) break;
       }
+      const latestLog = ctx.state.autoHealLog.length > 0
+        ? ctx.state.autoHealLog[ctx.state.autoHealLog.length - 1]
+        : null;
+      const latestDefense = latestLog
+        ? { file: latestLog.file, healMs: latestLog.healMs, at: latestLog.at }
+        : null;
       return Response.json({
         status: "ON",
         healed_count: ctx.state.autoHealCount,
         last_healed: last,
         total_defenses: ctx.state.autoHealCount,
         defense_reasons: [...reasonSet],
+        latest_defense: latestDefense,
         saved_tokens_k: Math.round(Math.max(0, ctx.state.hologramStats.totalOriginalChars - ctx.state.hologramStats.totalHologramChars) / 4 / 100) / 10,
         session_saved_tokens_k: Math.round(Math.max(0, ctx.state.hologramStats.sessionOriginalChars - ctx.state.hologramStats.sessionHologramChars) / 4 / 100) / 10,
       });
@@ -146,9 +153,9 @@ export function createHttpHandler(ctx: DaemonContext, cleanup: () => void) {
 
     if (url.pathname === "/auto-heal/record" && req.method === "POST") {
       try {
-        const body = await req.json() as { id: string };
+        const body = await req.json() as { id: string; file?: string; healMs?: number };
         ctx.state.autoHealCount++;
-        ctx.state.autoHealLog.push({ id: body.id, at: Date.now() });
+        ctx.state.autoHealLog.push({ id: body.id, at: Date.now(), file: body.file ?? body.id, healMs: body.healMs ?? 0 });
         if (ctx.state.autoHealLog.length > 100) ctx.state.autoHealLog.shift();
         try { ctx.insertTelemetry.run("immune", "heal_hit", JSON.stringify({ antibodyId: body.id }), null, Date.now()); } catch { /* crash-only */ }
         return Response.json({ status: "recorded", total: ctx.state.autoHealCount });

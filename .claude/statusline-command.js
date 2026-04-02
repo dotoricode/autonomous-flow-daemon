@@ -32,7 +32,7 @@ function render(data) {
 
   if (model) parts.push(model.replace(/\s*\([^)]*\)\s*/g, '').trim());
 
-  if (usedPct !== undefined) {
+  if (usedPct != null) {
     ctxIdx = parts.length;
     parts.push(`${ctxIcon} ctx ${usedPct}%`);
   }
@@ -73,14 +73,23 @@ function render(data) {
           ? Math.round(sessionSavedRaw / sessionPotential * 100)
           : 0;
 
-        // 절약률을 ctx 바로 옆에 인라인으로 — "🟢 ctx 23% ↓15%"
-        if (ctxIdx >= 0 && ctxSavePct > 0) {
-          parts[ctxIdx] += ` ↓${ctxSavePct}%`;
+        // flash: 8초 이내 방어 이벤트면 처방전 메시지 표시
+        const ld = d.latest_defense;
+        if (ld && ld.at && (Date.now() - ld.at) < 8000) {
+          console.log(`[afd] 🛡️ ${ld.file} 손상 감지 | 🩹 ${ld.healMs}ms 만에 자가 복구 완료`);
+          process.exit(0);
+          return;
         }
 
-        // afd 파트: 방어 건수만 간결하게
+        // 일반 요약: 방어 건수 + ctx/tok 절약률 — "🛡️ 3건 (ctx↓25% tok↓52%)"
         const defenseText = d.total_defenses > 0 ? `${d.total_defenses}건` : 'ON';
-        parts.push(`🛡️ ${defenseText}`);
+        const ctxSavePct2 = ctxSize > 0 && sessionSavedRaw > 0
+          ? Math.round(sessionSavedRaw / ctxSize * 100)
+          : 0;
+        const savingText = (ctxSavePct2 > 0 || ctxSavePct > 0)
+          ? ` (ctx↓${ctxSavePct2}% tok↓${ctxSavePct}%)`
+          : '';
+        parts.push(`🛡️ ${defenseText}${savingText}`);
         finish();
       })
       .catch(() => {

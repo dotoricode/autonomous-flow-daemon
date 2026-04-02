@@ -42,7 +42,7 @@ export interface DaemonState {
   hologramStats: HologramStats;
   ecosystems: DetectionResult[];
   autoHealCount: number;
-  autoHealLog: { id: string; at: number }[];
+  autoHealLog: { id: string; at: number; file: string; healMs: number }[];
   recentUnlinks: number[];
   firstTapTimestamps: Map<string, number>;
   suppressionSkippedCount: number;
