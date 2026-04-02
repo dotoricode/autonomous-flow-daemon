@@ -112,7 +112,7 @@
 #### Hologram Engine Overhaul
 - [x] Tree-sitter (web-tree-sitter WASM) 기반 엔진으로 전면 교체 — TS compiler API 제거
 - [x] 다국어 지원: TypeScript/JS (full), Python (L0 fallback), Go/Rust (fallback)
-- [x] `src/core/hologram/` 서브모듈 구조 — engine, types, ts-extractor, py-extractor, fallback, incremental
+- [x] `src/core/hologram/` 서브모듈 구조 — engine, types, ts-extractor, py-extractor, go-extractor, fallback, incremental
 - [x] Incremental hologram — LCS 기반 diff-only 모드 (`changedNodes`, `isDiff`)
 - [x] True LRU 캐시 (최대 200 엔트리)
 - [x] LCS guard: n×m > 50,000 → full diff fallback (270ms 예산 보호)
@@ -148,6 +148,15 @@
 
 #### Bug Fixes
 - [x] `mistakeCache` warm-up 경로 정규화 — Windows 백슬래시 → 포워드 슬래시
+
+### v1.6.2 — Go Language Support
+
+#### Go Extractor
+- [x] `src/core/hologram/go-extractor.ts` — tree-sitter-go WASM 기반 Go 파싱
+- [x] 추출 대상: package, import, type(struct/interface/alias), func, method(receiver)
+- [x] struct 필드 전체 보존, interface method_elem 직접 추출
+- [x] 9개 테스트 (`test/hologram-go.test.ts`) 추가, 전체 154/154 통과
+- [x] `tree-sitter-go@0.25.0` dependencies에 추가
 
 ---
 

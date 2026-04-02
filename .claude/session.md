@@ -51,16 +51,29 @@
 - Lean Mode: permissions.deny 적용 완료 (7개 도구 차단)
 - Working tree: **clean** (미커밋 변경사항 없음)
 
-## ⭐ 다음 최우선 과제 (P1): Go extractor 구현
-- 목표: Go 언어 파일(.go) 홀로그램 추출 지원 (현재 L0 fallback)
-- 구현 위치: `src/core/hologram/go-extractor.ts`
-- 접근: tree-sitter-go WASM 바인딩 + `src/core/hologram/ts-extractor.ts` 패턴 참조
-- 완료 조건: go 파일 홀로그램 추출 시 L0 대신 go-specific symbols 반환
+## 완료된 P1 작업
+- ✅ **Go extractor 구현** (`src/core/hologram/go-extractor.ts`)
+  - tree-sitter-go@0.25.0 WASM 바인딩, package/import/type/func/method 추출
+  - 9개 신규 테스트, 전체 154/154 통과
+  - roadmap.md에 v1.6.2 섹션 추가
+
+## 현재 상태
+- 버전: v1.6.2 (Go Extractor)
+- 홀로그램 지원 언어: TypeScript/JS (full), Python (L0), **Go (full)**, Rust (L0)
+- 모든 테스트: 154/154 통과
+
+## ⭐ 다음 최우선 과제 (P1): v1.5 계획서 체크박스 갱신
+- `.omc/plans/afd-v1.5-trust-builder.md` — 코드는 완료됐으나 체크박스 미반영
+- 또는: Open Questions 5건 결정 (`open-questions.md`)
+  - mistake_type 저장 언어 (Korean vs English)
+  - mistake_history 보존 기간 (90일 vs 무기한)
+  - HUD defense count reset 정책
+  - Path normalization 전략
+  - Hologram L1 barrel file handling
 
 ## 기타 작업 후보 (P2~P3)
-- v1.5 계획서 체크박스 갱신 (코드는 완료, 문서만 미갱신)
-- Open Questions 결정: mistake_type 저장 언어, 보존 기간, HUD 리셋 정책
-- Rust extractor 추가 (Go extractor 이후)
+- Rust extractor 추가 (tree-sitter-rust WASM, Go extractor 패턴 참조)
+- v1.7.0 Collective Intelligence 구현 착수
 
 ## 기억할 사항
 - web-tree-sitter는 named export: `import { Parser, Language } from "web-tree-sitter"`

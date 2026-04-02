@@ -8,6 +8,7 @@
 import { TreeSitterEngine } from "./hologram/engine";
 import { tsExtractor } from "./hologram/ts-extractor";
 import { pyExtractor } from "./hologram/py-extractor";
+import { goExtractor } from "./hologram/go-extractor";
 import { fallbackL0 } from "./hologram/fallback";
 import { generateIncrementalHologram, setCachedHologram } from "./hologram/incremental";
 import type { HologramResult, HologramOptions, LanguageExtractor } from "./hologram/types";
@@ -16,7 +17,7 @@ import type { HologramResult, HologramOptions, LanguageExtractor } from "./holog
 export type { HologramResult, HologramOptions } from "./hologram/types";
 export { clearHologramCache } from "./hologram/incremental";
 
-const extractors: LanguageExtractor[] = [tsExtractor, pyExtractor];
+const extractors: LanguageExtractor[] = [tsExtractor, pyExtractor, goExtractor];
 
 function detectExtractor(filePath: string): LanguageExtractor | null {
   const ext = filePath.split(".").pop()?.toLowerCase() ?? "";

@@ -14,11 +14,14 @@ function render(data) {
   const model   = data.model?.display_name || '';
   const ctx     = data.context_window || {};
   const usedPct = ctx.used_percentage;
+  const ctxSize = ctx.context_window_size || 200000;
   const usage   = ctx.current_usage || {};
   // 현재 컨텍스트에서 사용 중인 총 토큰 수
+  // current_usage가 비어있으면 usedPct × ctxSize 로 추정
   const totalUsed = (usage.input_tokens || 0)
                   + (usage.cache_read_input_tokens || 0)
-                  + (usage.cache_creation_input_tokens || 0);
+                  + (usage.cache_creation_input_tokens || 0)
+                  || (usedPct != null ? Math.round(usedPct / 100 * ctxSize) : 0);
 
   // 컨텍스트 색상 아이콘
   let ctxIcon = '🟢';
@@ -32,10 +35,18 @@ function render(data) {
     parts.push(model.replace(/\s*\([^)]*\)\s*/g, '').trim());
   }
 
+  const rate5h = data.rate_limits?.five_hour?.used_percentage;
+
   // 컨텍스트 사용량: "🟢 ctx 5% (46k)"
   if (usedPct != null) {
     const usedK = totalUsed > 0 ? ` (${formatK(totalUsed)})` : '';
     parts.push(`${ctxIcon} ctx ${usedPct}%${usedK}`);
+  }
+
+  // 5시간 rate limit
+  if (rate5h != null) {
+    const rateIcon = rate5h >= 80 ? '⚠️ ' : '';
+    parts.push(`${rateIcon}rate ${rate5h}%`);
   }
 
   function finish() {
@@ -71,8 +82,9 @@ function render(data) {
         }
 
         // ── 세션 격리 계산 ──────────────────────────────────────
-        // 누적 총 절약 토큰 (데몬 전체 기간)
-        const currentTotalSaved = Math.round((d.saved_tokens_k || 0) * 1000);
+        // saved_tokens_k 가 없으면 절약 계산 스킵 (데몬 초기화 직후 등)
+        const rawSavedK = d.saved_tokens_k;
+        const currentTotalSaved = rawSavedK != null ? Math.round(rawSavedK * 1000) : null;
 
         // 현재 데몬 PID 읽기 (세션 변경 감지에 사용)
         let currentPid = null;
@@ -90,7 +102,9 @@ function render(data) {
         // 베이스라인 초기화 조건:
         //   1) 파일이 없거나 손상됨 → 이번이 이 세션의 첫 실행
         //   2) 데몬 PID가 바뀜 → 데몬 재시작 = 새 세션
-        if (baseline === null || (currentPid !== null && baselinePid !== currentPid)) {
+        //   단, currentTotalSaved 가 null 이면 아직 데이터 없음 → 초기화 안 함
+        if (currentTotalSaved !== null &&
+            (baseline === null || (currentPid !== null && baselinePid !== currentPid))) {
           baseline = currentTotalSaved;
           try {
             fs.writeFileSync(
@@ -101,22 +115,21 @@ function render(data) {
           } catch {}
         }
 
-        // session_saved = 현재 세션에서 afd가 절약한 토큰
-        const sessionSaved = Math.max(0, currentTotalSaved - baseline);
-
         // ── 정확한 절약률 계산 ──────────────────────────────────
-        // session_potential = afd 없이 썼을 예상 토큰 수
-        const sessionPotential = totalUsed + sessionSaved;
-        const savingRate = (sessionPotential > 0 && sessionSaved > 0)
-          ? Math.round(sessionSaved / sessionPotential * 100)
-          : 0;
-
-        // ── 포맷팅 ─────────────────────────────────────────────
-        // 방어 건수: 0이면 "ON", 있으면 "N건"
         const defenseLabel = d.total_defenses > 0 ? `${d.total_defenses}건` : 'ON';
-        const savingText   = `(↓ ${formatK(sessionSaved)} 절약, ctx -${savingRate}%)`;
 
-        parts.push(`🛡️ afd: ${defenseLabel} ${savingText}`);
+        if (currentTotalSaved !== null && baseline !== null) {
+          // session_saved = 현재 세션에서 afd가 절약한 토큰
+          const sessionSaved    = Math.max(0, currentTotalSaved - baseline);
+          const sessionPotential = totalUsed + sessionSaved;
+          const savingRate = (sessionPotential > 0 && sessionSaved > 0)
+            ? Math.round(sessionSaved / sessionPotential * 100)
+            : 0;
+          const savingText = `(↓ ${formatK(sessionSaved)} 절약, ctx -${savingRate}%)`;
+          parts.push(`🛡️ afd: ${defenseLabel} ${savingText}`);
+        } else {
+          parts.push(`🛡️ afd: ${defenseLabel}`);
+        }
         finish();
       })
       .catch(() => {

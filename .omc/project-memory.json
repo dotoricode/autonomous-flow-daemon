@@ -120,8 +120,8 @@
     },
     {
       "path": ".claude\\session.md",
-      "accessCount": 17,
-      "lastAccessed": 1775135031449,
+      "accessCount": 18,
+      "lastAccessed": 1775136808701,
       "type": "file"
     },
     {
@@ -137,21 +137,27 @@
       "type": "file"
     },
     {
+      "path": "docs\\roadmap.md",
+      "accessCount": 15,
+      "lastAccessed": 1775136790779,
+      "type": "file"
+    },
+    {
       "path": "src\\daemon\\http-routes.ts",
       "accessCount": 14,
       "lastAccessed": 1775133936902,
       "type": "file"
     },
     {
-      "path": ".claude\\hooks.json",
-      "accessCount": 13,
-      "lastAccessed": 1775086804952,
+      "path": ".claude\\statusline-command.js",
+      "accessCount": 14,
+      "lastAccessed": 1775136784846,
       "type": "file"
     },
     {
-      "path": "docs\\roadmap.md",
-      "accessCount": 12,
-      "lastAccessed": 1775134769301,
+      "path": ".claude\\hooks.json",
+      "accessCount": 13,
+      "lastAccessed": 1775086804952,
       "type": "file"
     },
     {
@@ -164,6 +170,12 @@
       "path": "src\\cli.ts",
       "accessCount": 10,
       "lastAccessed": 1775087148578,
+      "type": "file"
+    },
+    {
+      "path": "src\\core\\hologram.ts",
+      "accessCount": 10,
+      "lastAccessed": 1775136661846,
       "type": "file"
     },
     {
@@ -185,22 +197,10 @@
       "type": "file"
     },
     {
-      "path": "src\\core\\hologram.ts",
-      "accessCount": 8,
-      "lastAccessed": 1775133665178,
-      "type": "file"
-    },
-    {
       "path": "src",
       "accessCount": 8,
       "lastAccessed": 1775133932745,
       "type": "directory"
-    },
-    {
-      "path": ".claude\\statusline-command.js",
-      "accessCount": 8,
-      "lastAccessed": 1775134255719,
-      "type": "file"
     },
     {
       "path": "src\\commands\\stats.ts",
