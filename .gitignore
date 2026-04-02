@@ -11,6 +11,10 @@ nul/
 .mcp.json
 .bkit/
 .DS_Store
+
+# OMC runtime state (ephemeral)
+.omc/sessions/
+.omc/state/
 be_resizing-demo.gif
 demo-before.gif
 a.txt

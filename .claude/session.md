@@ -36,21 +36,31 @@
 - `cd9c59d` docs: remove afd watch references from all docs
 - `9e14112` docs(readme): update token savings with latest measurements
 - `55ea296` docs(readme): streamline README with token savings data, sync ko/en
+- `4b060fd` feat(hologram): implement smart bypass & L1 symbol extraction
+- `bdefd2b` docs: sync benchmarks with tree-sitter engine & add troubleshooting guide
+- `d531126` chore(config): apply lean mode mcp settings & update session
+- `0a30b40` docs(roadmap): add v1.6.1 entries for smart bypass & L1 symbol extraction
+- ✅ v1.7 베이스라인 확보 커밋 (chore: secure baseline for v1.7)
 
 ## 현재 상태
-- 버전: v1.6.0 (Hook Manager)
+- 버전: v1.6.1 (Smart Bypass + L1 Symbol Extraction)
 - 홀로그램 엔진: web-tree-sitter WASM 기반, TS+Python 지원
 - 배치 처리: 10파일 × 10ms → 1 batch 확인됨
 - 벤치마크 (최신): 55파일, 84% 압축, ~60,927 토큰 절약, 268ms
 - 모든 테스트: 145/145 통과
 - Lean Mode: permissions.deny 적용 완료 (7개 도구 차단)
-- 미커밋 변경사항: server.ts(경로 정규화), settings.json(deny), README/README-ko.md(수치), troubleshooting.md
+- Working tree: **clean** (미커밋 변경사항 없음)
 
-## 다음 작업 후보
-- 오늘 변경사항 커밋 (server.ts, settings.json, README 수치 업데이트, troubleshooting.md)
-- Go extractor 추가 (현재 L0 fallback)
+## ⭐ 다음 최우선 과제 (P1): Go extractor 구현
+- 목표: Go 언어 파일(.go) 홀로그램 추출 지원 (현재 L0 fallback)
+- 구현 위치: `src/core/hologram/go-extractor.ts`
+- 접근: tree-sitter-go WASM 바인딩 + `src/core/hologram/ts-extractor.ts` 패턴 참조
+- 완료 조건: go 파일 홀로그램 추출 시 L0 대신 go-specific symbols 반환
+
+## 기타 작업 후보 (P2~P3)
 - v1.5 계획서 체크박스 갱신 (코드는 완료, 문서만 미갱신)
 - Open Questions 결정: mistake_type 저장 언어, 보존 기간, HUD 리셋 정책
+- Rust extractor 추가 (Go extractor 이후)
 
 ## 기억할 사항
 - web-tree-sitter는 named export: `import { Parser, Language } from "web-tree-sitter"`
