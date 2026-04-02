@@ -40,7 +40,7 @@ With `afd`, the daemon noticed in 10ms, restored the file in 184ms, and logged i
 | AI deletes `.claudeignore` | 30 min manual fix | **0.2s auto-heal** |
 | Hook file corrupted | Re-inject hooks, restart session | **Silent background repair** |
 | `git checkout` triggers 50 file events | AI goes haywire | **Mass-event suppressor kicks in** |
-| AI reads 7 large files (103KB) | ~25,800 tokens consumed | **~1,800 tokens via hologram (93% saved)** |
+| AI reads 8 large files (114KB) | ~28,600 tokens consumed | **~1,700 tokens via hologram (94% saved)** |
 
 ---
 
@@ -68,24 +68,24 @@ With `afd`, the daemon noticed in 10ms, restored the file in 184ms, and logged i
 
 The hologram system is afd's biggest value driver for AI-assisted development. Here's what we measured in a real session:
 
-### Session Snapshot
+### Session Snapshot (measured during a real coding session)
 
 | Metric | Value |
 |:-------|:------|
-| Hologram requests | 7 calls |
-| Target files total size | ~103 KB (7 files, avg 14.7 KB each) |
-| Original token cost | ~25,800 tokens |
-| After hologram compression | ~1,800 tokens |
-| **Tokens saved** | **~24,000 tokens (93% reduction)** |
+| Hologram requests | 8 calls |
+| Target files total size | ~114.5 KB (8 files, avg 14.3 KB each) |
+| Original token cost | ~28,600 tokens |
+| After hologram compression | ~1,700 tokens |
+| **Tokens saved** | **~26,900 tokens (94% reduction)** |
 
 ### How It Scales
 
 ```
-Session tokens used:      33,000  ████████░░░░░░░░
-Tokens saved by hologram: 24,000  ██████░░░░░░░░░░  (42% of session total)
+Session tokens (at ctx ~15%):  ~150,000  ████████████████
+Tokens saved by hologram:       ~26,900  ██░░░░░░░░░░░░░░  (18% of session)
 ```
 
-The savings compound as sessions grow longer. At ctx 50%+, repeatedly reading large files without hologram would burn through the context window. With hologram, each large file costs **1/14th** of its original token footprint.
+At ctx 50%+, file reads dominate the token budget. Without hologram, reading 8 large files costs ~28.6K tokens each time. With hologram, **each file costs 1/16th** of its original footprint — and the gap widens with every repeated read.
 
 ### Three Layers of Token Optimization
 
