@@ -67,27 +67,8 @@ function render(data) {
       .then(r => r.json())
       .then(d => {
         const defenseText = d.total_defenses > 0 ? `${d.total_defenses}건 방어` : 'ON';
-        const currentSavedK = d.saved_tokens_k || 0;
+        const sessionSavedK = d.session_saved_tokens_k || 0;
 
-        // Session-scoped baseline tracking
-        const baselineFile = path.resolve(__dirname, '..', '.afd', 'session_baseline_saved.json');
-        let sessionSavedK = 0;
-        try {
-          let baseline = { savedK: currentSavedK, lastTotalUsed: totalUsed };
-          if (fs.existsSync(baselineFile)) {
-            const existing = JSON.parse(fs.readFileSync(baselineFile, 'utf-8'));
-            // 새 세션 감지: totalUsed가 이전보다 크게 줄었으면 세션 리셋
-            if (totalUsed < existing.lastTotalUsed * 0.5) {
-              baseline = { savedK: currentSavedK, lastTotalUsed: totalUsed };
-            } else {
-              baseline = { savedK: existing.savedK, lastTotalUsed: totalUsed };
-              sessionSavedK = Math.max(0, Math.round((currentSavedK - existing.savedK) * 10) / 10);
-            }
-          }
-          fs.writeFileSync(baselineFile, JSON.stringify(baseline), 'utf-8');
-        } catch { /* crash-only: baseline 실패 시 조용히 무시 */ }
-
-        // 현재 세션 기준 ctx 절약률
         const sessionSavedRaw = sessionSavedK * 1000;
         const sessionPotential = totalUsed + sessionSavedRaw;
         const ctxSavePct = sessionPotential > 0 && sessionSavedRaw > 0
