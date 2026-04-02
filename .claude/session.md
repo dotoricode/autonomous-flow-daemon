@@ -2,109 +2,55 @@
 
 > 마지막 업데이트: 2026-04-02 | 브랜치: main
 
-## 완료된 작업 (오늘)
-- Tree-sitter 기반 홀로그램 엔진 전면 교체 (TS compiler API → web-tree-sitter WASM)
-  - 다국어 지원: TypeScript/JS, Python (Go/Rust는 L0 fallback)
-  - `src/core/hologram/` 서브모듈 구조로 리팩터: engine, types, ts-extractor, py-extractor, fallback, incremental
-  - 모든 call site async/await 마이그레이션 완료 (mcp-handler, http-routes, server, benchmark)
-- Incremental Hologram (diff-only 모드) 구현
-  - LCS 기반 unified diff 포맷 (changedNodes, isDiff 필드 추가)
-  - True LRU 캐시 (최대 200 엔트리, delete+reinsert on access)
-  - LCS guard: n*m > 50,000 → full diff fallback (SEAM 270ms 예산 보호)
-- EventBatcher 구현 (`src/daemon/event-batcher.ts`)
-  - 300ms 디바운스, immune 파일 fast-path (즉시 처리)
-  - dedup (last-event-wins), add+unlink 상쇄 처리
-  - flush(), destroy(), pendingCount, totalBatches 통계
-- server.ts에 EventBatcher 통합
-- 테스트 3종 추가: hologram-treesitter (13개), event-batcher (7개), hologram-incremental (10개)
-- Lean Mode 적용: `.claude/settings.json`에 `permissions.deny` 추가 (7개 불필요 도구 명시 차단)
-  - 차단: python_repl, ast_grep_*, lsp_code_actions, lsp_code_action_resolve, lsp_prepare_rename, lsp_servers
-- file_path 경로 정규화: `server.ts:175` mistakeCache 웜업 시 `row.file_path.replace(/\\/g, "/")` 추가
-- Tree-sitter 벤치마크 실행 및 README/README-ko.md 수치 최신화
-  - 55파일, 압축률 84%, 원본 290KB→46.3KB, 토큰 절약 ~60,927개, 처리시간 268ms
-  - 구버전(94%, ~26,900 tokens) → 신버전(84%, ~60,900 tokens) 전면 교체
-  - 영/한 문서 수치 100% 동기화 완료
-- Windows/Mac 양쪽 호환 statusline 수정 (`D:/.claude/statusline-command.js`)
-  - Windows: wmic으로 afd 프로세스 감지, ASCII 지표 사용
-  - 경로 이식성: $HOME 변수 사용
-- `web-tree-sitter` 패키지 미설치 에러 해결 → `bun install`로 수정
-- `docs/troubleshooting.md` 신규 생성 (오류 누적 기록용)
+## 이번 세션에서 완료된 작업
 
-## 커밋 이력 (오늘)
-- `cccebac` feat(hologram): replace TS compiler with tree-sitter engine + add incremental batching
-- `de7a26b` feat(cli): add afd benchmark command
-- `cd9c59d` docs: remove afd watch references from all docs
-- `9e14112` docs(readme): update token savings with latest measurements
-- `55ea296` docs(readme): streamline README with token savings data, sync ko/en
-- `4b060fd` feat(hologram): implement smart bypass & L1 symbol extraction
-- `bdefd2b` docs: sync benchmarks with tree-sitter engine & add troubleshooting guide
-- `d531126` chore(config): apply lean mode mcp settings & update session
-- `0a30b40` docs(roadmap): add v1.6.1 entries for smart bypass & L1 symbol extraction
-- ✅ v1.7 베이스라인 확보 커밋 (chore: secure baseline for v1.7)
+### 언어 지원 확장 (Hologram Extractor)
+- **Go extractor** (`src/core/hologram/go-extractor.ts`) — tree-sitter-go@0.25.0
+  - package/import/type(struct+interface+alias)/func/method(receiver) 추출
+  - 9개 신규 테스트 (`test/hologram-go.test.ts`)
+- **Rust extractor** (`src/core/hologram/rust-extractor.ts`) — tree-sitter-rust@0.24.0
+  - use/mod/struct(fields)/enum(variants)/trait(signatures)/type alias/impl(method stubs)/fn 추출
+  - impl Trait for Type, generic impl 헤더 정확 처리
+  - 11개 신규 테스트 (`test/hologram-rust.test.ts`)
+  - 기존 `.rs` L0 fallback 테스트 → `.xyz` 교정
+
+### 아키텍처 결정 (Open Questions 5건 확정)
+- **Q1** `mistake_type` → **English enum** in DB, Korean은 HUD 렌더 레이어에서만
+- **Q2** defense count → **세션 in-memory** 리셋, 평생 통계는 `afd score`
+- **Q3** retention → **90일** (`db.ts:97` 30d→90d 적용 완료)
+- **Q4** barrel file L1 → **v2.0 defer**, 현재 L0 fallback 유지
+- **Q5** `file_path` → **workspace-relative POSIX** (`src/core/db.ts` 형식)
+
+### 문서 동기화
+- `.omc/plans/afd-v1.5-trust-builder.md` — 23개 `[ ]` → `[x]` 전체 완료
+- `.omc/plans/open-questions.md` — 5건 결정 이유·Rule 기록
+- `docs/roadmap.md` — v1.6.2, v1.6.3 섹션 추가
+
+## 커밋 이력 (이번 세션)
+- `2ad92fc` chore: secure baseline for v1.7 and apply lean mode
+- `61ab874` feat(hologram): add Go extractor with tree-sitter-go WASM
+- `9c588a4` docs(arch): resolve 5 open architecture questions & apply Q3 retention fix
+- `40e9b7e` docs(plan): sync v1.5 plan checkboxes with implementation status
+- `1135c94` feat(hologram): add Rust extractor with tree-sitter-rust WASM
 
 ## 현재 상태
-- 버전: v1.6.1 (Smart Bypass + L1 Symbol Extraction)
-- 홀로그램 엔진: web-tree-sitter WASM 기반, TS+Python 지원
-- 배치 처리: 10파일 × 10ms → 1 batch 확인됨
-- 벤치마크 (최신): 55파일, 84% 압축, ~60,927 토큰 절약, 268ms
-- 모든 테스트: 145/145 통과
-- Lean Mode: permissions.deny 적용 완료 (7개 도구 차단)
-- Working tree: **clean** (미커밋 변경사항 없음)
+- 버전: **v1.6.3** (Rust Extractor)
+- 홀로그램 지원 언어: TypeScript/JS (full) · Python (L0) · **Go (full)** · **Rust (full)**
+- 모든 테스트: **165/165 통과**
+- Working tree: **clean**
+- 모든 v1.x 계획 문서: **완전 동기화**
 
-## 완료된 P1 작업
-- ✅ **Go extractor 구현** (`src/core/hologram/go-extractor.ts`)
-  - tree-sitter-go@0.25.0 WASM 바인딩, package/import/type/func/method 추출
-  - 9개 신규 테스트, 전체 154/154 통과
-  - roadmap.md에 v1.6.2 섹션 추가
+## ⭐ 다음 최우선 과제 (P1): v1.7.0 Collective Intelligence 착수
 
-## 현재 상태
-- 버전: v1.6.2 (Go Extractor)
-- 홀로그램 지원 언어: TypeScript/JS (full), Python (L0), **Go (full)**, Rust (L0)
-- 모든 테스트: 154/154 통과
-
-## 완료된 P1 작업 (추가)
-- ✅ **Open Questions 5건 결정** (`.omc/plans/open-questions.md`)
-  - Q1: mistake_type → **English enum** in DB, Korean at HUD render
-  - Q2: defense count → **session in-memory** reset, lifetime via `afd score`
-  - Q3: retention → **90일** (db.ts:97 purge 30d→90d 업데이트 필요)
-  - Q4: barrel file L1 → **v2.0 defer**, L0 fallback final for v1.x
-  - Q5: file_path → **workspace-relative POSIX** (`src/core/db.ts` 형식)
-
-## 완료된 P1 작업 (추가 2)
-- ✅ **Q3 코드 반영** — `db.ts:97` purge threshold 30d→90d (commit:9c588a4 포함)
-- ✅ **v1.5 계획서 체크박스 갱신** — `.omc/plans/afd-v1.5-trust-builder.md` 전체 23개 `[x]` 완료
-  - v1.5 plan document successfully synchronized with actual implementation status.
-
-## 현재 상태
-- 버전: v1.6.2 (Go Extractor + Architecture Decisions)
-- 모든 v1.x 계획 문서 상태: 완전 동기화
-- 모든 테스트: 154/154 통과
-- Working tree: clean
-
-## ✅ HUD Dynamic Token Savings Directive 검토 완료 (2026-04-02)
-- Directive 요청 사항(타이포 수정, 하드코딩 → 동적 계산, 파이프라인 연결) 모두 **이미 구현됨**
-- `persistHologramStats()` → `hologramStats` → `/mini-status` `saved_tokens_k` → statusline delta 계산 전 구간 정상
-- statusline은 매 렌더링마다 실시간 fetch, 세션 시작 0k → afd_read/hologram 처리 시 즉시 증가
-
-## 완료된 P1 작업 (추가 3)
-- ✅ **Rust extractor 구현** (`src/core/hologram/rust-extractor.ts`)
-  - tree-sitter-rust@0.24.0 WASM, use/mod/struct/enum/trait/type/impl/fn 추출
-  - 11개 신규 테스트, 전체 165/165 통과
-  - 기존 `.rs` L0 fallback 테스트 `.xyz`로 교정
-
-## 현재 상태
-- 버전: v1.6.3 (Rust Extractor)
-- 홀로그램 지원 언어: TypeScript/JS (full), Python (L0), Go (full), **Rust (full)**
-- 모든 테스트: 165/165 통과
-
-## ⭐ 다음 최우선 과제: v1.7.0 Collective Intelligence 착수
-- 모든 언어 커버리지 확보 완료 (TS/Go/Rust)
-- 첫 번째 v1.7 항목: Remote vaccine store (`afd sync --remote <url>`)
-- 참조: `docs/roadmap.md` v1.7.0 섹션
+첫 번째 항목: **Remote vaccine store** (`afd sync --remote <url>`)
+- 참조: `docs/roadmap.md` v1.7.0 → Team Antibody Federation 섹션
+- 설계: 로컬 antibody DB를 원격 URL로 push/pull하는 `sync` 커맨드 확장
 
 ## 기억할 사항
-- web-tree-sitter는 named export: `import { Parser, Language } from "web-tree-sitter"`
-- WASM 경로: `require.resolve("tree-sitter-typescript/package.json")` → dirname → `tree-sitter-typescript.wasm`
-- v1.4.0 Collective Intelligence는 에이전트 팀 간 자동 항체 공유로 방향 전환
-- bun install 필수: 클론/풀 후 반드시 실행 (web-tree-sitter 등 미설치 시 start 실패)
-- mistakeCache의 file_path는 항상 forward slash로 정규화됨 (INSERT·SELECT·웜업 모두 적용)
+- web-tree-sitter named export: `import { Parser, Language } from "web-tree-sitter"`
+- WASM 경로: `require.resolve("tree-sitter-{lang}/package.json")` → dirname → `tree-sitter-{lang}.wasm`
+- bun install 필수: 클론/풀 후 반드시 실행 (WASM 패키지 미설치 시 start 실패)
+- `mistake_type`은 English enum으로 저장, HUD 표시 시 한국어 변환
+- `file_path`는 항상 workspace-relative POSIX (`src/core/db.ts` 형식)로 정규화
+- tree-sitter-go AST: interface methods → `interface_type`의 직접 namedChildren (interface_body 래퍼 없음)
+- tree-sitter-rust AST: impl body → `declaration_list`, function body → `block`
