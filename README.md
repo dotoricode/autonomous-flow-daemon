@@ -59,7 +59,6 @@ With `afd`, the daemon noticed in 10ms, restored the file in 184ms, and logged i
 | **Double-Tap Heuristic** | Delete once = auto-heal; delete again within 30s = respected as intent |
 | **Vaccine Network** | Export learned antibodies via `afd sync` for cross-project immunity |
 | **MCP Integration** | `afd mcp install` auto-registers the daemon as an MCP server |
-| **Live Dashboard** | `afd watch` — real-time TUI with SSE event stream |
 | **HUD Defense Counter** | Status bar shows defense count + reason summary at a glance |
 
 ---
@@ -163,7 +162,6 @@ graph LR
 | `afd sync` | Vaccine payload export/import (`--push`, `--pull`, `--remote <url>`) |
 | `afd restart` | Stop + start in one command |
 | `afd status` | Quick health check — daemon, hooks, MCP, defenses |
-| `afd watch` | Real-time TUI dashboard — live S.E.A.M event stream |
 | `afd doctor` | Comprehensive health analysis with auto-fix recommendations |
 | `afd evolution` | Analyze quarantined failures & generate prevention rules |
 | `afd mcp install` | Register afd as MCP server in project + global config |

@@ -59,7 +59,6 @@ AI 에이전트가 실수로 설정 파일을 삭제하거나, 훅 파일을 망
 | **더블탭 감지** | 한 번 삭제 = 자동 복구; 30초 내 재삭제 = 사용자 의도로 존중 |
 | **백신 네트워크** | `afd sync`로 학습된 항체를 팀 전체에 전파 |
 | **MCP 통합** | `afd mcp install`로 MCP 서버 자동 등록 |
-| **실시간 대시보드** | `afd watch` — SSE 이벤트 스트림 TUI |
 | **HUD 방어 카운터** | 상태 표시줄에 방어 건수와 사유 요약을 한눈에 표시 |
 
 ---
@@ -163,7 +162,6 @@ graph LR
 | `afd sync` | 백신 페이로드 추출/가져오기 (`--push`, `--pull`, `--remote <url>`) |
 | `afd restart` | 종료 후 재시작 |
 | `afd status` | 빠른 건강 확인 — 데몬, 훅, MCP, 방어 현황 |
-| `afd watch` | 실시간 TUI 대시보드 — SSE 이벤트 스트림 |
 | `afd doctor` | 종합 건강 분석 + 자동 수정 권고 |
 | `afd evolution` | 격리된 실패 분석 및 방지 규칙 생성 |
 | `afd mcp install` | MCP 서버를 프로젝트 + 글로벌 설정에 등록 |

@@ -54,7 +54,6 @@
 - [x] Vaccine registry (`afd vaccine list/search/install/publish`)
 
 #### Developer Experience
-- [x] `afd watch` — interactive TUI dashboard (SSE live stream)
 - [x] `afd doctor` — deep health analysis with `--fix`
 - [x] `afd evolution` — quarantine analysis + lesson generation
 - [x] `afd restart` — sequential stop + start

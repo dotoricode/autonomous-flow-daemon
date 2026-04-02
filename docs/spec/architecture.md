@@ -60,7 +60,6 @@
 | `score.ts` | `afd score` | Fetch `/score` and render TUI dashboard with guardian grade |
 | `fix.ts` | `afd fix` | Interactive diagnosis + JSON-Patch application + antibody learning |
 | `sync.ts` | `afd sync` | Export/import antibodies for team sharing |
-| `watch.ts` | `afd watch` | Real-time TUI dashboard via SSE `/events` stream |
 | `diagnose.ts` | `afd diagnose` | Headless diagnosis for hook automation (`--auto-heal`) |
 | `doctor.ts` | `afd doctor` | Deep health analysis with rule-based grading (A+ to D) |
 | `vaccine.ts` | `afd vaccine` | Vaccine registry: list, search, install, publish |
@@ -170,7 +169,7 @@ If >3 `unlink` events occur within 1 second (e.g., `git checkout`):
 | Transport | Use Case |
 |-----------|----------|
 | **HTTP** (dynamic port) | CLI ↔ Daemon communication; port written to `.afd/daemon.port` |
-| **SSE** (`/events`) | Live event streaming to `afd watch` TUI (max 20 clients) |
+| **SSE** (`/events`) | Live event streaming for external consumers (max 20 clients) |
 | **stdio** (JSON-RPC) | MCP mode for Claude Code tool integration (`--mcp` flag) |
 | **PID file** | `.afd/daemon.pid` for process discovery and liveness check |
 

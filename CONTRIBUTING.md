@@ -53,7 +53,7 @@ bun run dev                    # run CLI directly
 bun test                       # run E2E suite
 bun run src/cli.ts start       # start daemon in foreground
 bun run src/cli.ts start --mcp # start in MCP stdio mode
-bun run src/cli.ts watch       # live TUI dashboard
+bun run src/cli.ts doctor      # comprehensive health analysis
 ```
 
 - All new features must include a test in `tests/`.

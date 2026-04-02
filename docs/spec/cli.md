@@ -68,10 +68,6 @@ Deep health analysis with rule-based grading (A+ to D) and auto-fix.
 |--------|-------------|
 | `--fix` | Auto-fix detected issues |
 
-### `afd watch`
-
-Real-time TUI dashboard — live S.E.A.M event stream via SSE.
-
 ### `afd diagnose`
 
 Headless diagnosis for hook automation.
