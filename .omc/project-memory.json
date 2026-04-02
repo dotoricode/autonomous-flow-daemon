@@ -119,9 +119,15 @@
       "type": "file"
     },
     {
+      "path": "docs\\roadmap.md",
+      "accessCount": 22,
+      "lastAccessed": 1775137823300,
+      "type": "file"
+    },
+    {
       "path": ".claude\\session.md",
-      "accessCount": 18,
-      "lastAccessed": 1775136808701,
+      "accessCount": 21,
+      "lastAccessed": 1775137802457,
       "type": "file"
     },
     {
@@ -137,21 +143,15 @@
       "type": "file"
     },
     {
-      "path": "docs\\roadmap.md",
+      "path": ".claude\\statusline-command.js",
       "accessCount": 15,
-      "lastAccessed": 1775136790779,
+      "lastAccessed": 1775136852126,
       "type": "file"
     },
     {
       "path": "src\\daemon\\http-routes.ts",
       "accessCount": 14,
       "lastAccessed": 1775133936902,
-      "type": "file"
-    },
-    {
-      "path": ".claude\\statusline-command.js",
-      "accessCount": 14,
-      "lastAccessed": 1775136784846,
       "type": "file"
     },
     {
@@ -179,15 +179,15 @@
       "type": "file"
     },
     {
-      "path": "src\\adapters\\index.ts",
-      "accessCount": 8,
-      "lastAccessed": 1775087178934,
+      "path": "src\\core\\db.ts",
+      "accessCount": 10,
+      "lastAccessed": 1775137538062,
       "type": "file"
     },
     {
-      "path": "src\\core\\db.ts",
+      "path": "src\\adapters\\index.ts",
       "accessCount": 8,
-      "lastAccessed": 1775132270280,
+      "lastAccessed": 1775087178934,
       "type": "file"
     },
     {

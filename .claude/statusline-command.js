@@ -46,7 +46,7 @@ function render(data) {
   // 5시간 rate limit
   if (rate5h != null) {
     const rateIcon = rate5h >= 80 ? '⚠️ ' : '';
-    parts.push(`${rateIcon}rate ${rate5h}%`);
+    parts.push(`${rateIcon}rate ${Math.round(rate5h)}%`);
   }
 
   function finish() {
