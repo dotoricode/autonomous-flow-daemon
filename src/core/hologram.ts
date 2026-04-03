@@ -12,6 +12,7 @@ import { goExtractor } from "./hologram/go-extractor";
 import { rustExtractor } from "./hologram/rust-extractor";
 import { fallbackL0 } from "./hologram/fallback";
 import { generateIncrementalHologram, setCachedHologram } from "./hologram/incremental";
+import { traceCallGraph } from "./hologram/call-graph";
 import type { HologramResult, HologramOptions, LanguageExtractor } from "./hologram/types";
 
 // Re-export types for backward compatibility
@@ -54,7 +55,32 @@ export async function generateHologram(
     // Cache for future incremental diffs
     setCachedHologram(filePath, lines);
 
-    const hologram = lines.join("\n");
+    let hologram = lines.join("\n");
+
+    // N-Depth: append cross-file dependency signatures
+    if (options?.nDepth && options.nDepth >= 2) {
+      try {
+        const deps = await traceCallGraph(filePath, source, { maxDepth: options.nDepth });
+        if (deps.length > 0) {
+          const depLines = ["\n// [🔗 N-Depth Dependencies]"];
+          const byFile = new Map<string, typeof deps>();
+          for (const d of deps) {
+            const arr = byFile.get(d.sourceFile) ?? [];
+            arr.push(d);
+            byFile.set(d.sourceFile, arr);
+          }
+          for (const [file, entries] of byFile) {
+            const relPath = file.replace(/\\/g, "/");
+            depLines.push(`// --- ${relPath} (L${entries[0].depth}) ---`);
+            for (const e of entries) {
+              depLines.push(e.signature);
+            }
+          }
+          hologram += "\n" + depLines.join("\n");
+        }
+      } catch { /* N-Depth is best-effort; don't fail the hologram */ }
+    }
+
     const hologramLength = hologram.length;
     const savings = source.length > 0
       ? Math.round((source.length - hologramLength) / source.length * 1000) / 10

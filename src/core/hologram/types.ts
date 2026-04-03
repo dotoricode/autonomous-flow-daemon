@@ -15,6 +15,8 @@ export interface HologramOptions {
   diffOnly?: boolean;
   /** L1: Extract only these named symbols (interfaces, types, classes, functions) */
   symbols?: string[];
+  /** N-Depth: trace cross-file call graph. 2 = L2 (direct imports), 3 = L3 (transitive) */
+  nDepth?: number;
 }
 
 export interface LanguageExtractor {
