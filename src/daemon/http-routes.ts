@@ -87,7 +87,12 @@ export function createHttpHandler(ctx: DaemonContext, cleanup: () => void) {
     }
 
     if (url.pathname === "/workspace-map") {
-      return new Response(ctx.getWorkspaceMap(), { headers: { "Content-Type": "text/plain" } });
+      const mapText = ctx.getWorkspaceMap();
+      const { totalProjectBytes, mapBytes } = ctx.getWorkspaceMapStats();
+      if (totalProjectBytes > 0) {
+        ctx.persistCtxSavings('wsmap', totalProjectBytes, Math.max(0, totalProjectBytes - mapBytes));
+      }
+      return new Response(mapText, { headers: { "Content-Type": "text/plain" } });
     }
 
     if (url.pathname === "/read") {
@@ -219,6 +224,8 @@ export function createHttpHandler(ctx: DaemonContext, cleanup: () => void) {
         : 0;
       const dailyRows = ctx.getDailyAll.all() as { date: string; requests: number; original_chars: number; hologram_chars: number }[];
       const todayRow = dailyRows.find(r => r.date === ctx.today());
+      const ctxDailyRaw = ctx.getCtxSavingsDaily.all() as { date: string; type: string; requests: number; original_chars: number; saved_chars: number }[];
+      const ctxLifetimeRaw = ctx.getCtxSavingsLifetime.all() as { type: string; total_requests: number; total_original_chars: number; total_saved_chars: number }[];
       return Response.json({
         uptime,
         filesDetected: ctx.state.filesDetected,
@@ -234,6 +241,10 @@ export function createHttpHandler(ctx: DaemonContext, cleanup: () => void) {
             savings: todayRow.original_chars > 0 ? Math.round((todayRow.original_chars - todayRow.hologram_chars) / todayRow.original_chars * 1000) / 10 : 0,
           } : null,
           daily: dailyRows.map(r => ({ date: r.date, requests: r.requests, originalChars: r.original_chars, hologramChars: r.hologram_chars })),
+        },
+        ctxSavings: {
+          daily: ctxDailyRaw,
+          lifetime: ctxLifetimeRaw,
         },
         immune: {
           antibodies: abCount.cnt,

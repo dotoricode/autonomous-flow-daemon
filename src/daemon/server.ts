@@ -154,6 +154,38 @@ export function main(options: DaemonOptions = {}) {
   const getDailyAll = db.prepare("SELECT date, requests, original_chars, hologram_chars FROM hologram_daily ORDER BY date DESC LIMIT 7");
   const purgeOldDaily = db.prepare("DELETE FROM hologram_daily WHERE date < date('now', '-7 days')");
 
+  // ── Context Savings (wsmap + pinpoint) ──
+  const upsertCtxDaily = db.prepare(`
+    INSERT INTO ctx_savings_daily (date, type, requests, original_chars, saved_chars) VALUES (?, ?, 1, ?, ?)
+    ON CONFLICT(date, type) DO UPDATE SET
+      requests = requests + 1,
+      original_chars = original_chars + excluded.original_chars,
+      saved_chars = saved_chars + excluded.saved_chars
+  `);
+  const updateCtxLifetime = db.prepare(`
+    UPDATE ctx_savings_lifetime SET
+      total_requests = total_requests + 1,
+      total_original_chars = total_original_chars + ?,
+      total_saved_chars = total_saved_chars + ?
+    WHERE type = ?
+  `);
+  const getCtxSavingsDaily = db.prepare(
+    "SELECT date, type, requests, original_chars, saved_chars FROM ctx_savings_daily ORDER BY date DESC, type"
+  );
+  const getCtxSavingsLifetime = db.prepare(
+    "SELECT type, total_requests, total_original_chars, total_saved_chars FROM ctx_savings_lifetime"
+  );
+
+  function persistCtxSavings(type: 'wsmap' | 'pinpoint', originalChars: number, savedChars: number) {
+    if (savedChars <= 0) return;
+    try {
+      upsertCtxDaily.run(today(), type, originalChars, savedChars);
+      updateCtxLifetime.run(originalChars, savedChars, type);
+    } catch (err) {
+      console.error(`[afd] Failed to persist ctx savings:`, err instanceof Error ? err.message : err);
+    }
+  }
+
   // ── Telemetry ──
   const insertTelemetry = db.prepare(
     "INSERT INTO telemetry (category, action, detail, duration_ms, timestamp) VALUES (?, ?, ?, ?, ?)"
@@ -586,8 +618,11 @@ export function main(options: DaemonOptions = {}) {
     insertMistakeHistory: insertMistakeHistory as unknown as DaemonContext["insertMistakeHistory"],
     queryMistakesByFile: queryMistakesByFile as unknown as DaemonContext["queryMistakesByFile"],
     deleteMistakeOverflow: deleteMistakeOverflow as unknown as DaemonContext["deleteMistakeOverflow"],
-    seam, persistHologramStats, safeHologram,
-    getWorkspaceMap: wsMap.get, today, discoveryTargets: discovery.targets,
+    seam, persistHologramStats, persistCtxSavings, safeHologram,
+    getWorkspaceMap: wsMap.get, getWorkspaceMapStats: wsMap.getLastBuildStats,
+    today, discoveryTargets: discovery.targets,
+    getCtxSavingsDaily: getCtxSavingsDaily as unknown as DaemonContext["getCtxSavingsDaily"],
+    getCtxSavingsLifetime: getCtxSavingsLifetime as unknown as DaemonContext["getCtxSavingsLifetime"],
     port: 0,
   };
 

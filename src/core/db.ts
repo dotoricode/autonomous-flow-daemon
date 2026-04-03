@@ -70,6 +70,29 @@ export function initDb(): Database {
   // Purge entries older than 7 days
   db.exec(`DELETE FROM hologram_daily WHERE date < date('now', '-7 days')`);
 
+  // ── Context Savings: workspace-map and pinpoint read tracking ──
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS ctx_savings_daily (
+      date TEXT NOT NULL,
+      type TEXT NOT NULL,
+      requests INTEGER NOT NULL DEFAULT 0,
+      original_chars INTEGER NOT NULL DEFAULT 0,
+      saved_chars INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (date, type)
+    )
+  `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS ctx_savings_lifetime (
+      type TEXT NOT NULL PRIMARY KEY,
+      total_requests INTEGER NOT NULL DEFAULT 0,
+      total_original_chars INTEGER NOT NULL DEFAULT 0,
+      total_saved_chars INTEGER NOT NULL DEFAULT 0
+    )
+  `);
+  db.exec(`INSERT OR IGNORE INTO ctx_savings_lifetime (type) VALUES ('wsmap')`);
+  db.exec(`INSERT OR IGNORE INTO ctx_savings_lifetime (type) VALUES ('pinpoint')`);
+  db.exec(`DELETE FROM ctx_savings_daily WHERE date < date('now', '-7 days')`);
+
   // ── Telemetry: feature usage tracking ──
   db.exec(`
     CREATE TABLE IF NOT EXISTS telemetry (

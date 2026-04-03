@@ -12,9 +12,10 @@ const CODE_EXTS = /\.[tj]sx?$/;
 const DOC_EXTS = /\.(ts|js|tsx|jsx|json|md)$/;
 
 /** Build a workspace map: file tree with sizes and export signatures */
-function buildWorkspaceMap(): string {
+function buildWorkspaceMap(): { map: string; totalProjectBytes: number } {
   const cwd = process.cwd();
   const lines: string[] = [`# Workspace Map — ${cwd}`, `# Generated: ${new Date().toISOString()}`, ""];
+  let totalProjectBytes = 0;
 
   function walk(dir: string, prefix: string, depth: number) {
     if (depth > MAX_WALK_DEPTH) return;
@@ -32,6 +33,7 @@ function buildWorkspaceMap(): string {
           continue;
         }
         if (!DOC_EXTS.test(entry)) continue;
+        totalProjectBytes += lst.size;
         const sizeKB = (lst.size / 1024).toFixed(1);
         if (CODE_EXTS.test(entry) && lst.size < 100 * 1024) {
           try {
@@ -56,11 +58,12 @@ function buildWorkspaceMap(): string {
   for (const f of ["CLAUDE.md", "package.json", ".claudeignore", ".mcp.json"]) {
     try {
       const st = lstatSync(join(cwd, f));
+      totalProjectBytes += st.size;
       lines.push(`  ${f}  (${(st.size / 1024).toFixed(1)}KB)`);
     } catch { /* not found */ }
   }
 
-  return lines.join("\n");
+  return { map: lines.join("\n"), totalProjectBytes };
 }
 
 /**
@@ -71,13 +74,22 @@ export function createWorkspaceMap() {
   let cache = "";
   let dirty = true;
   let timer: ReturnType<typeof setTimeout> | null = null;
+  let lastTotalProjectBytes = 0;
+  let lastMapBytes = 0;
 
   function get(): string {
     if (dirty || !cache) {
-      cache = buildWorkspaceMap();
+      const result = buildWorkspaceMap();
+      cache = result.map;
+      lastTotalProjectBytes = result.totalProjectBytes;
+      lastMapBytes = result.map.length;
       dirty = false;
     }
     return cache;
+  }
+
+  function getLastBuildStats() {
+    return { totalProjectBytes: lastTotalProjectBytes, mapBytes: lastMapBytes };
   }
 
   function markDirty() {
@@ -88,5 +100,5 @@ export function createWorkspaceMap() {
 
   function getTimer() { return timer; }
 
-  return { get, markDirty, getTimer };
+  return { get, getLastBuildStats, markDirty, getTimer };
 }

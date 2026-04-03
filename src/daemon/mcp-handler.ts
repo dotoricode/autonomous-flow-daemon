@@ -191,8 +191,13 @@ async function handleMcpRequest(ctx: DaemonContext, req: { id?: unknown; method?
   if (method === "resources/read") {
     const uri = params?.uri as string | undefined;
     if (uri === "afd://workspace-map") {
+      const mapText = ctx.getWorkspaceMap();
+      const { totalProjectBytes, mapBytes } = ctx.getWorkspaceMapStats();
+      if (totalProjectBytes > 0) {
+        ctx.persistCtxSavings('wsmap', totalProjectBytes, Math.max(0, totalProjectBytes - mapBytes));
+      }
       mcpResponse(id, {
-        contents: [{ uri: "afd://workspace-map", mimeType: "text/plain", text: ctx.getWorkspaceMap() }],
+        contents: [{ uri: "afd://workspace-map", mimeType: "text/plain", text: mapText }],
       });
       return;
     }
@@ -361,6 +366,7 @@ async function handleMcpRequest(ctx: DaemonContext, req: { id?: unknown; method?
           const start = Math.max(1, Math.floor(startLine)) - 1;
           const end = Math.min(lines.length, Math.floor(endLine));
           const slice = lines.slice(start, end).map((l, i) => `${start + i + 1}\t${l}`).join("\n");
+          ctx.persistCtxSavings('pinpoint', source.length, Math.max(0, source.length - slice.length));
           mcpResponse(id, {
             content: [{ type: "text", text: `// ${file} lines ${start + 1}-${end} (${sizeKB}KB total)\n${slice}`, cache_control: { type: "ephemeral" } }],
           });
@@ -371,6 +377,7 @@ async function handleMcpRequest(ctx: DaemonContext, req: { id?: unknown; method?
         if (symbols && symbols.length > 0) {
           const result = await generateHologram(file, source, { symbols });
           ctx.persistHologramStats(result.originalLength, result.hologramLength);
+          ctx.persistCtxSavings('pinpoint', result.originalLength, Math.max(0, result.originalLength - result.hologramLength));
           const header = `// [afd L1] ${file} — symbols: [${symbols.join(", ")}]\n\n`;
           mcpResponse(id, {
             content: [{ type: "text", text: header + result.hologram, cache_control: { type: "ephemeral" } }],
@@ -379,6 +386,9 @@ async function handleMcpRequest(ctx: DaemonContext, req: { id?: unknown; method?
         }
 
         if (source.length < AFD_READ_THRESHOLD) {
+          // Record even full-content reads so the denominator reflects ALL afd_read traffic,
+          // not just compressed files. This makes the savings % honest.
+          ctx.persistHologramStats(source.length, source.length);
           mcpResponse(id, {
             content: [{ type: "text", text: source, cache_control: { type: "ephemeral" } }],
           });

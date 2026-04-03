@@ -102,9 +102,13 @@ export interface DaemonContext {
   // Helper functions
   seam: (phase: string, msg: string) => void;
   persistHologramStats: (originalChars: number, hologramChars: number) => void;
+  persistCtxSavings: (type: 'wsmap' | 'pinpoint', originalChars: number, savedChars: number) => void;
   safeHologram: (filePath: string, source: string) => Promise<string>;
   getWorkspaceMap: () => string;
+  getWorkspaceMapStats: () => { totalProjectBytes: number; mapBytes: number };
   today: () => string;
+  getCtxSavingsDaily: { all: () => { date: string; type: string; requests: number; original_chars: number; saved_chars: number }[] };
+  getCtxSavingsLifetime: { all: () => { type: string; total_requests: number; total_original_chars: number; total_saved_chars: number }[] };
 
   // Discovery
   discoveryTargets: string[];
