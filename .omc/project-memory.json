@@ -147,21 +147,45 @@
   },
   "hotPaths": [
     {
+      "path": "src\\daemon\\server.ts",
+      "accessCount": 45,
+      "lastAccessed": 1775220042859,
+      "type": "directory"
+    },
+    {
       "path": "docs\\roadmap.md",
-      "accessCount": 30,
-      "lastAccessed": 1775150168871,
+      "accessCount": 33,
+      "lastAccessed": 1775151409921,
       "type": "file"
     },
     {
-      "path": ".claude\\session.md",
-      "accessCount": 14,
-      "lastAccessed": 1775150183331,
+      "path": "src\\commands\\dashboard.ts",
+      "accessCount": 26,
+      "lastAccessed": 1775220591529,
+      "type": "file"
+    },
+    {
+      "path": "src\\daemon\\mcp-handler.ts",
+      "accessCount": 25,
+      "lastAccessed": 1775220599799,
       "type": "file"
     },
     {
       "path": "src\\daemon\\http-routes.ts",
-      "accessCount": 10,
-      "lastAccessed": 1775149750593,
+      "accessCount": 22,
+      "lastAccessed": 1775220057132,
+      "type": "file"
+    },
+    {
+      "path": ".claude\\session.md",
+      "accessCount": 19,
+      "lastAccessed": 1775219756396,
+      "type": "file"
+    },
+    {
+      "path": "src\\cli.ts",
+      "accessCount": 13,
+      "lastAccessed": 1775219789251,
       "type": "file"
     },
     {
@@ -171,21 +195,27 @@
       "type": "file"
     },
     {
-      "path": "src\\cli.ts",
+      "path": "src\\daemon\\client.ts",
       "accessCount": 9,
-      "lastAccessed": 1775149833459,
+      "lastAccessed": 1775214010341,
       "type": "file"
     },
     {
-      "path": "src\\daemon\\mcp-handler.ts",
-      "accessCount": 7,
-      "lastAccessed": 1775149089172,
-      "type": "file"
+      "path": "src\\daemon\\types.ts",
+      "accessCount": 9,
+      "lastAccessed": 1775220030507,
+      "type": "directory"
     },
     {
-      "path": "src\\daemon\\server.ts",
-      "accessCount": 7,
-      "lastAccessed": 1775149472015,
+      "path": "CLAUDE.md",
+      "accessCount": 8,
+      "lastAccessed": 1775151278102,
+      "type": "directory"
+    },
+    {
+      "path": "",
+      "accessCount": 8,
+      "lastAccessed": 1775214023877,
       "type": "directory"
     },
     {
@@ -201,22 +231,28 @@
       "type": "directory"
     },
     {
-      "path": "src\\daemon\\client.ts",
+      "path": "src\\core\\db.ts",
       "accessCount": 6,
-      "lastAccessed": 1775149823259,
+      "lastAccessed": 1775219789811,
       "type": "file"
     },
     {
-      "path": "",
-      "accessCount": 4,
-      "lastAccessed": 1775149304077,
-      "type": "directory"
+      "path": "src\\daemon\\workspace-map.ts",
+      "accessCount": 5,
+      "lastAccessed": 1775220026380,
+      "type": "file"
     },
     {
       "path": "docs\\release\\v1.8.0-audit.md",
       "accessCount": 4,
       "lastAccessed": 1775149941600,
       "type": "file"
+    },
+    {
+      "path": "src\\core\\boast.ts",
+      "accessCount": 4,
+      "lastAccessed": 1775214010275,
+      "type": "directory"
     },
     {
       "path": ".claude\\session-lock.md",
@@ -231,9 +267,9 @@
       "type": "file"
     },
     {
-      "path": "src\\core\\db.ts",
-      "accessCount": 2,
-      "lastAccessed": 1775143794124,
+      "path": "src\\commands\\score.ts",
+      "accessCount": 3,
+      "lastAccessed": 1775213850040,
       "type": "file"
     },
     {
@@ -255,9 +291,9 @@
       "type": "file"
     },
     {
-      "path": "src\\daemon\\types.ts",
+      "path": "src",
       "accessCount": 2,
-      "lastAccessed": 1775148596957,
+      "lastAccessed": 1775211567445,
       "type": "directory"
     },
     {
@@ -330,6 +366,24 @@
       "path": "src/daemon/client.ts",
       "accessCount": 1,
       "lastAccessed": 1775149810112,
+      "type": "directory"
+    },
+    {
+      "path": "src\\core\\evolution.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775150698998,
+      "type": "file"
+    },
+    {
+      "path": "src\\daemon\\mcp-subscriptions.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775150841432,
+      "type": "file"
+    },
+    {
+      "path": "src\\daemon",
+      "accessCount": 1,
+      "lastAccessed": 1775219827011,
       "type": "directory"
     }
   ],
