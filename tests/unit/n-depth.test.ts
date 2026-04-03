@@ -57,10 +57,21 @@ export function pad(n: number): string {
 
 beforeAll(() => {
   mkdirSync(join(FIXTURE_DIR, "helpers"), { recursive: true });
+  mkdirSync(join(FIXTURE_DIR, "components"), { recursive: true });
   writeFileSync(join(FIXTURE_DIR, "target.ts"), TARGET_TS);
   writeFileSync(join(FIXTURE_DIR, "utils.ts"), UTILS_TS);
   writeFileSync(join(FIXTURE_DIR, "helpers", "date.ts"), DATE_HELPER_TS);
   writeFileSync(join(FIXTURE_DIR, "helpers", "pad.ts"), PAD_TS);
+
+  // Barrel file fixtures
+  writeFileSync(join(FIXTURE_DIR, "components", "Button.ts"),
+    `export function Button(props: { label: string }): string {\n  return props.label;\n}\n`);
+  writeFileSync(join(FIXTURE_DIR, "components", "Input.ts"),
+    `export function Input(props: { value: string }): string {\n  return props.value;\n}\n`);
+  writeFileSync(join(FIXTURE_DIR, "components", "index.ts"),
+    `export { Button } from './Button';\nexport * from './Input';\n`);
+  writeFileSync(join(FIXTURE_DIR, "barrel-consumer.ts"),
+    `import { Button, Input } from "./components";\n\nexport function render() {\n  Button({ label: "hi" });\n  Input({ value: "world" });\n}\n`);
 });
 
 afterAll(() => {
@@ -196,5 +207,53 @@ describe("hologram n-depth integration", () => {
 
     expect(result.hologram).toContain("[🔗 N-Depth Dependencies]");
     expect(result.hologram).toContain("pad");
+  });
+});
+
+// ── 4. Barrel File Re-export Tracking ────────────────────────────────────────
+
+describe("barrel file re-export", () => {
+  test("resolveImports follows named re-export: export { X } from './X'", () => {
+    const consumerPath = join(FIXTURE_DIR, "barrel-consumer.ts");
+    const source = `import { Button } from "./components";`;
+    const imports = resolveImports(source, consumerPath);
+
+    expect(imports.length).toBe(1);
+    // Should resolve through barrel to the actual Button.ts file
+    expect(imports[0].resolvedPath).toBe(join(FIXTURE_DIR, "components", "Button.ts"));
+    expect(imports[0].symbols).toContain("Button");
+  });
+
+  test("resolveImports follows wildcard re-export: export * from './X'", () => {
+    const consumerPath = join(FIXTURE_DIR, "barrel-consumer.ts");
+    const source = `import { Input } from "./components";`;
+    const imports = resolveImports(source, consumerPath);
+
+    expect(imports.length).toBe(1);
+    // Should resolve through barrel's `export * from './Input'` to actual Input.ts
+    expect(imports[0].resolvedPath).toBe(join(FIXTURE_DIR, "components", "Input.ts"));
+    expect(imports[0].symbols).toContain("Input");
+  });
+
+  test("resolveImports handles multiple symbols from barrel", () => {
+    const consumerPath = join(FIXTURE_DIR, "barrel-consumer.ts");
+    const source = `import { Button, Input } from "./components";`;
+    const imports = resolveImports(source, consumerPath);
+
+    // Should resolve to TWO separate files (Button.ts and Input.ts)
+    expect(imports.length).toBe(2);
+    const paths = imports.map(i => i.resolvedPath);
+    expect(paths).toContain(join(FIXTURE_DIR, "components", "Button.ts"));
+    expect(paths).toContain(join(FIXTURE_DIR, "components", "Input.ts"));
+  });
+
+  test("N-Depth traces through barrel files", async () => {
+    const consumerPath = join(FIXTURE_DIR, "barrel-consumer.ts");
+    const source = `import { Button, Input } from "./components";\n\nexport function render() {\n  Button({ label: "hi" });\n  Input({ value: "world" });\n}\n`;
+    const result = await traceCallGraph(consumerPath, source, { maxDepth: 2 });
+
+    const signatures = result.map(r => r.signature);
+    expect(signatures.some(s => s.includes("Button"))).toBe(true);
+    expect(signatures.some(s => s.includes("Input"))).toBe(true);
   });
 });
