@@ -75,6 +75,11 @@
 #### Bug Fixes
 - [x] 15 bugs fixed (v1.2 + v1.3 audit): memory leaks, command injection, SSE cleanup, AST diff accuracy
 
+### v1.4.0 — Security & Modular Refactor
+- [x] Server module extraction (`server.ts` → modular components)
+- [x] Path traversal guard, input validation, symlink protection
+- [x] Version single source of truth
+
 ### v1.5.0 — Trust-Builder
 
 #### Hologram L1 (Import-Based Semantic Compression)

@@ -11,7 +11,7 @@
     "src/**/*.ts",
     "mcp-config.json",
     "README.md",
-    "README.ko.md",
+    "README-ko.md",
     "CHANGELOG.md",
     "LICENSE"
   ],
