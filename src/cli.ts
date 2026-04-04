@@ -16,6 +16,7 @@ import { mcpCommand } from "./commands/mcp";
 import { hooksCommand } from "./commands/hooks";
 import { pluginCommand } from "./commands/plugin";
 import { setupCommand } from "./commands/setup";
+import { webCommand } from "./commands/web";
 import { APP_VERSION } from "./version";
 import { trackCliCommand } from "./core/telemetry";
 
@@ -74,6 +75,11 @@ program
   .command("dashboard")
   .description("Live token savings dashboard — real-time TUI (Ctrl+C to exit)")
   .action(dashboardCommand);
+
+program
+  .command("web")
+  .description("Open web dashboard in default browser")
+  .action(webCommand);
 
 // ── Tool Commands ────────────────────────────────────────────────────────────
 

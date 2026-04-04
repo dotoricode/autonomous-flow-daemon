@@ -94,6 +94,7 @@ export interface DaemonContext {
   antibodyIds: { all: () => { id: string }[] };
   countAntibodies: { get: () => { cnt: number } };
   getDailyAll: { all: () => { date: string; requests: number; original_chars: number; hologram_chars: number }[] };
+  getHologramLifetime: { get: () => { total_requests: number; total_original_chars: number; total_hologram_chars: number } | null };
   insertTelemetry: { run: (...args: unknown[]) => void };
   insertMistakeHistory: { run: (...args: unknown[]) => void };
   queryMistakesByFile: { all: (...args: unknown[]) => MistakeEntry[] };

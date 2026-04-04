@@ -60,17 +60,33 @@ export async function daemonRequest<T = unknown>(path: string, method: "POST", b
 export async function daemonRequest<T = unknown>(path: string, method: "GET" | "POST" = "GET", body?: unknown): Promise<T> {
   const info = getDaemonInfo();
   if (!info) throw new Error("Daemon not running. Run `afd start` first.");
-  const init: RequestInit = {
-    method,
-    signal: AbortSignal.timeout(5000),
-  };
-  if (method === "POST" && body !== undefined) {
-    init.body = JSON.stringify(body);
-    init.headers = { "Content-Type": "application/json" };
+
+  const MAX_RETRIES = 3;
+  const RETRY_DELAY_MS = 1000;
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const init: RequestInit = {
+        method,
+        signal: AbortSignal.timeout(5000),
+      };
+      if (method === "POST" && body !== undefined) {
+        init.body = JSON.stringify(body);
+        init.headers = { "Content-Type": "application/json" };
+      }
+      const res = await fetch(`http://127.0.0.1:${info.port}${path}`, init);
+      if (!res.ok) throw new Error(`Daemon returned ${res.status}`);
+      return res.json() as T;
+    } catch (err) {
+      if (attempt < MAX_RETRIES) {
+        console.error(`[afd] 데몬 재연결 중... (${attempt}/${MAX_RETRIES})`);
+        await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+      } else {
+        throw err;
+      }
+    }
   }
-  const res = await fetch(`http://127.0.0.1:${info.port}${path}`, init);
-  if (!res.ok) throw new Error(`Daemon returned ${res.status}`);
-  return res.json() as T;
+  throw new Error("Unreachable");
 }
 
 export async function getMeshPeers(): Promise<MeshEntry[]> {

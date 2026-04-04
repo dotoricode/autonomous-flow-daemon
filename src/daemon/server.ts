@@ -603,6 +603,7 @@ export function main(options: DaemonOptions = {}) {
     insertEvent, insertAntibody, listAntibodies, antibodyIds: antibodyIds as unknown as DaemonContext["antibodyIds"],
     countAntibodies: countAntibodies as unknown as DaemonContext["countAntibodies"],
     getDailyAll: getDailyAll as unknown as DaemonContext["getDailyAll"],
+    getHologramLifetime: getLifetime as unknown as DaemonContext["getHologramLifetime"],
     insertTelemetry: insertTelemetry as unknown as DaemonContext["insertTelemetry"],
     insertMistakeHistory: insertMistakeHistory as unknown as DaemonContext["insertMistakeHistory"],
     queryMistakesByFile: queryMistakesByFile as unknown as DaemonContext["queryMistakesByFile"],
@@ -621,8 +622,14 @@ export function main(options: DaemonOptions = {}) {
     return;
   }
 
-  // ── HTTP Server ──
-  const server = Bun.serve({ port: 0, fetch: createHttpHandler(ctx, cleanup) });
+  // ── HTTP Server (prefer fixed port 51831, fallback to OS-assigned) ──
+  const DEFAULT_PORT = 51831;
+  let server: ReturnType<typeof Bun.serve>;
+  try {
+    server = Bun.serve({ port: DEFAULT_PORT, fetch: createHttpHandler(ctx, cleanup) });
+  } catch {
+    server = Bun.serve({ port: 0, fetch: createHttpHandler(ctx, cleanup) });
+  }
   const port = server.port;
   ctx.port = port;
 
