@@ -2,12 +2,8 @@ import { describe, it, expect } from "bun:test";
 import { Database } from "bun:sqlite";
 import { suggestRules } from "../src/core/rule-suggestion";
 
-let testCounter = 0;
-
 function createTestDb(): Database {
-  const dbPath = `${import.meta.dir}/.tmp-suggest-${++testCounter}-${Date.now()}.sqlite`;
-  const db = new Database(dbPath);
-  db.exec("PRAGMA journal_mode = DELETE");
+  const db = new Database(":memory:");
   db.exec(`
     CREATE TABLE IF NOT EXISTS mistake_history (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -18,6 +14,8 @@ function createTestDb(): Database {
       timestamp INTEGER NOT NULL
     )
   `);
+  db.exec("CREATE INDEX IF NOT EXISTS idx_mh_fp_mt ON mistake_history (file_path, mistake_type)");
+  db.exec("CREATE INDEX IF NOT EXISTS idx_mh_ts ON mistake_history (timestamp)");
   return db;
 }
 
