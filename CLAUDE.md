@@ -1,10 +1,3 @@
-# Project Constitution Update Prompt
-
-Completely overwrite the contents of the current `CLAUDE.md` with the new architecture constitution below. This is the absolute principle (Constitution) you must strictly follow whenever you read, write, or commit code in this project.
-
----
-
-[New CLAUDE.md Content]
 # 🛡️ Autonomous Flow Daemon (afd) Architecture Constitution
 
 ## Session Continuity
@@ -43,7 +36,7 @@ Completely overwrite the contents of the current `CLAUDE.md` with the new archit
 ## 4.1. Error Recovery Workflow (afd-Assisted Self-Healing)
 - **Reactive Recovery:** If, after you edit a file, the terminal shows an `[afd]` message indicating the file was restored (e.g., "Silent corruption detected", "Restored from antibody snapshot"), you MUST:
   1. **Stop** your current edit attempt immediately.
-  2. Run `npx afd fix` in the terminal to get a full diagnosis with hologram context.
+  2. Run `afd fix` in the terminal to get a full diagnosis with hologram context.
   3. Read the diagnosis output and hologram to understand what went wrong.
   4. Only then attempt the edit again, this time respecting the file's structure.
 - **Never fight the daemon.** If afd restores a file, it means your edit broke the file's structural integrity. Do not repeat the same edit. Analyze the hologram, understand the expected structure, and produce a valid modification.
@@ -100,8 +93,8 @@ To avoid token waste and context pollution, only invoke subagents from the appro
 - `oh-my-claudecode:test-engineer` — test strategy
 - `oh-my-claudecode:security-reviewer` — immune system security audit
 
-**Avoid (8) — not relevant to afd development:**
-`designer`, `document-specialist`, `scientist`, `writer`, `qa-tester`, `code-reviewer`, `code-simplifier`, `oh-my-claudecode:architect` (do not call standalone outside `/plan`)
+**Avoid (7) — not relevant to afd development:**
+`designer`, `document-specialist`, `scientist`, `writer`, `qa-tester`, `code-reviewer`, `code-simplifier`
 
 **Disabled MCP tools (require user approval if called):**
 `python_repl`, `ast_grep_search`, `ast_grep_replace`, `lsp_code_actions`, `lsp_code_action_resolve`, `lsp_prepare_rename`, `lsp_servers`
@@ -109,16 +102,16 @@ To avoid token waste and context pollution, only invoke subagents from the appro
 **Disabled MCP servers (this project):**
 `playwright`, `shadcn-ui`, `sqlite`, `memory`, `fetch`, `sequential-thinking`, `telegram` — afd 프로젝트에서 사용하지 않는 서버. 토큰 절약을 위해 비활성화됨.
 
-## 9. Task State Management (OMC CLI)
-- 이 프로젝트의 모든 작업 상태 관리는 반드시 터미널에서 **omc CLI 명령어**를 사용하여 기록할 것.
-- 작업 시작, 진행 상태 커밋, 완료 처리 등 모든 상태 변경은 omc CLI로 수행한다.
-- 확실치 않으면 `omc --help`를 참조할 것.
-
 ## 8. OMC Hook Discipline
 - OMC의 MAGIC KEYWORD 훅은 `UserPromptSubmit` 단계에서 키워드를 감지하여 스킬을 자동 호출한다.
 - **오작동 방지:** 일반 대화에서 스킬 키워드와 겹치는 단어(예: "deep", "interview", "analyze")가 포함되면 의도치 않은 스킬이 트리거될 수 있다.
 - **대응:** 오작동 발생 시 `OMC_SKIP_HOOKS=UserPromptSubmit`을 환경변수로 설정하거나, 해당 턴에서 스킬 호출을 무시하라.
 - **afd MCP 연결 복구:** 세션 중 `afd` MCP가 끊기면 `/mcp` 명령으로 재연결하라. `afd_read`(프롬프트 캐싱)와 `afd_hologram`(토큰 압축)은 이 프로젝트의 핵심 토큰 절약 도구다.
+
+## 9. Task State Management (OMC CLI)
+- 이 프로젝트의 모든 작업 상태 관리는 반드시 터미널에서 **omc CLI 명령어**를 사용하여 기록할 것.
+- 작업 시작, 진행 상태 커밋, 완료 처리 등 모든 상태 변경은 omc CLI로 수행한다.
+- 확실치 않으면 `omc --help`를 참조할 것.
 
 ## 10. MCP 실시간 알림 프로토콜 (v1.9.0)
 
@@ -154,12 +147,5 @@ To avoid token waste and context pollution, only invoke subagents from the appro
 ## afd — AI Token Optimizer & Self-Healing
 
 This project uses [afd](https://www.npmjs.com/package/@dotoricode/afd) for token optimization and file protection.
-
-### File Reading Rules
-- **`afd_read` MCP 도구를 네이티브 Read 대신 사용하라.** 10KB 이상 파일은 자동으로 홀로그램(구조 스켈레톤)으로 압축되어 반환된다. 특정 구간이 필요하면 `startLine`/`endLine` 파라미터로 정밀 조회할 수 있다.
-- **프로젝트 구조를 파악할 때는 `afd://workspace-map` MCP 리소스를 먼저 읽어라.** 파일 트리 + export 시그니처가 한 번에 제공된다.
-- **대용량 파일(100줄+)의 구조를 파악할 때는 `afd_hologram` MCP 도구를 사용하라.** 타입 시그니처만 추출하여 80%+ 토큰을 절약한다.
-
-### Self-Healing
-- afd가 파일을 복구했다는 `[afd]` 메시지가 보이면, 해당 파일 편집을 중단하고 `afd_hologram`으로 구조를 먼저 파악하라.
+Rules for `afd_read`, `afd_hologram`, `afd://workspace-map`, and self-healing are defined in sections 4 and 4.1 above.
 <!-- afd:setup -->
