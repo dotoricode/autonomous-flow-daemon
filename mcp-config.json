@@ -1,10 +1,17 @@
 {
+  "_comment": "Use 'afd mcp install' to auto-generate the correct platform-specific config.",
   "mcpServers": {
     "afd": {
-      "command": "bun",
-      "args": ["run", "src/cli.ts", "start"],
-      "description": "Autonomous Flow Daemon — self-healing AI development environment guardian. Monitors critical config files and auto-restores them within 270ms.",
-      "env": {}
+      "command": "npx",
+      "args": ["-y", "@dotoricode/afd", "start", "--mcp"],
+      "description": "Autonomous Flow Daemon — self-healing AI development environment guardian."
+    }
+  },
+  "mcpServers_windows": {
+    "afd": {
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "@dotoricode/afd", "start", "--mcp"],
+      "description": "Autonomous Flow Daemon — Windows variant (cmd /c wrapper required)."
     }
   }
 }

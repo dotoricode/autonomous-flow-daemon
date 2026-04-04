@@ -35,17 +35,17 @@ const DIAGNOSE_ARGS = "diagnose --format a2a --auto-heal";
  * Resolve the hook command for invoking afd diagnose.
  * Priority:
  *   1. Global `afd` binary (npm/bun global install)
- *   2. `bunx afd` fallback (Bun environment)
- *   3. `npx afd` fallback (Node environment)
+ *   2. `bunx @dotoricode/afd` fallback (Bun environment)
+ *   3. `npx @dotoricode/afd` fallback (Node environment)
  */
 export function resolveHookCommand(): string {
   if (isCommandAvailable("afd")) {
     return `afd ${DIAGNOSE_ARGS}`;
   }
   if (isCommandAvailable("bunx")) {
-    return `bunx afd ${DIAGNOSE_ARGS}`;
+    return `bunx @dotoricode/afd ${DIAGNOSE_ARGS}`;
   }
-  return `npx -y afd ${DIAGNOSE_ARGS}`;
+  return `npx -y @dotoricode/afd ${DIAGNOSE_ARGS}`;
 }
 
 /** Check if a command exists on the system PATH */

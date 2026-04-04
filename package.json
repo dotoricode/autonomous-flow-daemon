@@ -1,18 +1,22 @@
 {
-  "name": "autonomous-flow-daemon",
-  "version": "1.9.1",
+  "name": "@dotoricode/afd",
+  "version": "2.0.0-dev.1",
   "description": "Zero-config immunity for AI coding workflows. Self-heals broken configs in < 270ms.",
   "type": "module",
   "bin": {
-    "afd": "./bin/afd.js"
+    "afd": "bin/afd.cjs"
   },
   "main": "./src/cli.ts",
   "engines": {
     "bun": ">=1.0.0"
   },
-  "os": ["darwin", "linux", "win32"],
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
   "files": [
-    "bin/afd.js",
+    "bin/afd.cjs",
     "src/**/*.ts",
     "mcp-config.json",
     "README.md",

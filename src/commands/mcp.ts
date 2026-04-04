@@ -7,7 +7,7 @@
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 import { join, resolve, dirname } from "path";
-import { homedir } from "os";
+import { homedir, platform } from "os";
 import { getSystemLanguage } from "../core/locale";
 
 const msgs = {
@@ -48,9 +48,15 @@ interface McpConfig {
 
 /** The canonical MCP server definition for afd */
 function afdMcpEntry(): McpServerEntry {
+  if (platform() === "win32") {
+    return {
+      command: "cmd",
+      args: ["/c", "npx", "-y", "@dotoricode/afd", "start", "--mcp"],
+    };
+  }
   return {
-    command: "bun",
-    args: ["run", "src/daemon/server.ts", "--mcp"],
+    command: "npx",
+    args: ["-y", "@dotoricode/afd", "start", "--mcp"],
   };
 }
 
