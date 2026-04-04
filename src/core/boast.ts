@@ -107,11 +107,6 @@ export function maybeHealBoast(triggerChance = 5, lang?: SupportedLang): string 
   return pick(m.BOAST_HEAL);
 }
 
-/** Always returns a dormant boast (rare event, always worth noting). */
-export function dormantBoast(lang?: SupportedLang): string {
-  return pick(msg(lang).BOAST_DORMANT);
-}
-
 /** Pick a random shift-end boast in the given locale. */
 export function localizedBoast(lang?: SupportedLang): string {
   return pick(msg(lang).BOAST_SHIFT_END);
@@ -198,7 +193,7 @@ function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-function formatUptime(seconds: number): string {
+export function formatUptime(seconds: number): string {
   if (seconds < 60) return `${seconds}s`;
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
   const h = Math.floor(seconds / 3600);
