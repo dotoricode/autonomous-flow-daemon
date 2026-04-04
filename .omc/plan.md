@@ -1,30 +1,22 @@
-# Phase B: Honest Metrics (토큰 추정 엔진)
+# DX 향상: 포트 고정 및 afd web CLI 추가
 
-## 문제
-`chars / 4` 고정 비율은 Claude BPE 토크나이저의 실제 동작과 무관한 허구 수치.
+## 완료 항목
 
-## 해결: Content-Aware Heuristic Engine
-- 파일 확장자별 경험적 chars/token 비율 적용
-- 보수적 추정 (과소 보고 > 과대 보고)
-- 신뢰도 레이블: 'heuristic' (향후 실측 기반 'measured' 확장 가능)
+### 1. 고정 포트 바인딩 (server.ts)
+- 기본 포트: `51831` 우선 시도
+- 이미 사용 중이면 `port: 0` (OS 할당)으로 폴백
+- 브라우저 북마크 `http://localhost:51831/dashboard` 안정화
 
-## 비율 테이블
-| 확장자 | chars/token | 근거 |
-|--------|-------------|------|
-| ts/js  | 3.2 | 키워드, 심볼, 브레이스 다수 |
-| tsx/jsx | 3.0 | XML 태그가 비율 낮춤 |
-| py | 3.5 | 영어 식별자 비중 높음 |
-| go | 3.3 | 간결한 키워드 |
-| rs | 3.1 | 라이프타임, 매크로 |
-| json | 2.8 | 구두점, 짧은 키 |
-| md | 4.2 | 산문 중심 |
-| default | 3.5 | 보수적 폴백 |
+### 2. `afd web` CLI 명령어 (commands/web.ts)
+- `getDaemonInfo()` + `isDaemonAlive()` 로 데몬 상태 확인
+- `exec(open/start/xdg-open)` 으로 OS 기본 브라우저 자동 오픈
+- Windows/macOS/Linux 크로스 플랫폼 대응
 
-## 변경 파일
-- `src/core/token-estimator.ts` (신규)
-- `src/daemon/server.ts` (import + persistHologramStats)
-- `src/daemon/http-routes.ts` (import + /mini-status)
-- `src/daemon/types.ts` (persistCtxSavings 타입)
+### 3. MCP 재연결 Watchdog (client.ts)
+- `daemonRequest()` 에 3회 재시도 + 1초 간격 로직 추가
+- 재시도 중 `[afd] 데몬 재연결 중... (N/3)` 콘솔 메시지 출력
+- 3회 실패 시 원래 에러 throw
 
-## 상태
-- [x] 완료
+## 테스트 결과
+- 217/217 전체 통과 (12.58s)
+- `afd web` → 브라우저 정상 오픈 확인

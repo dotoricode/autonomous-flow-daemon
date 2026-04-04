@@ -86,3 +86,11 @@
 | Q3 | Retention period | **90 days** (update from 30d in `db.ts:97`) | P1 |
 | Q4 | Barrel file L1 | **Defer to v2.0**, current L0 fallback is acceptable | P2 |
 | Q5 | `file_path` format | **Workspace-relative POSIX** (`src/core/db.ts`) | P1 |
+
+---
+
+## v2-launch-sprint - 2026-04-04
+- [ ] 한국 커뮤니티 대상 확정 필요 (Discord 서버? 개발자 카페? GeekNews?) — 포스트 톤과 형식이 달라짐
+- [ ] Reddit 포스트 형식: text post vs link post — r/ClaudeAI 규칙에 따라 결정 필요
+- [ ] 데모용 대형 파일 선택 확정 — 압축률이 가장 극적인 파일이 데모 임팩트를 좌우함 (server.ts? dashboard.html?)
+- [ ] YouTube 확장 여부 — 스프린트 내 시간 여유가 있으면 Option B로 전환 가능한지 판단 필요

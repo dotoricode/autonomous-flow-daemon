@@ -149,3 +149,17 @@ To avoid token waste and context pollution, only invoke subagents from the appro
 - **`notifications/resources/list_changed` 수신 시:**
   - `resources/list`를 다시 호출하여 새로 생성된 동적 리소스(예: `afd://history/{path}`)를 확인하라.
   - 새 리소스를 필요에 따라 즉시 구독(`resources/subscribe`)할 수 있다.
+
+<!-- afd:setup -->
+## afd — AI Token Optimizer & Self-Healing
+
+This project uses [afd](https://www.npmjs.com/package/@dotoricode/afd) for token optimization and file protection.
+
+### File Reading Rules
+- **`afd_read` MCP 도구를 네이티브 Read 대신 사용하라.** 10KB 이상 파일은 자동으로 홀로그램(구조 스켈레톤)으로 압축되어 반환된다. 특정 구간이 필요하면 `startLine`/`endLine` 파라미터로 정밀 조회할 수 있다.
+- **프로젝트 구조를 파악할 때는 `afd://workspace-map` MCP 리소스를 먼저 읽어라.** 파일 트리 + export 시그니처가 한 번에 제공된다.
+- **대용량 파일(100줄+)의 구조를 파악할 때는 `afd_hologram` MCP 도구를 사용하라.** 타입 시그니처만 추출하여 80%+ 토큰을 절약한다.
+
+### Self-Healing
+- afd가 파일을 복구했다는 `[afd]` 메시지가 보이면, 해당 파일 편집을 중단하고 `afd_hologram`으로 구조를 먼저 파악하라.
+<!-- afd:setup -->
