@@ -1,6 +1,6 @@
 # Reddit r/ClaudeAI — Post Draft
 
-**Title:** I built a daemon that saves 97% of tokens when Claude reads your codebase — and auto-heals files your AI breaks
+**Title:** I built a daemon that saved 1.4M tokens in 5 days (83% compression) — and auto-heals files your AI breaks
 
 ---
 

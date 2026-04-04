@@ -6,9 +6,9 @@
 <p align="center"><strong>Self-healing environments + 97% token compression. Your AI breaks things — afd fixes them in 184ms.</strong></p>
 
 <p align="center">
-  <a href="https://github.com/dotoricode/autonomous-flow-daemon">
-    <img src="demo.gif" width="850" alt="afd demo" style="border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.4);">
-  </a>
+  <video src="demo.mp4" width="850" autoplay loop muted playsinline>
+    <a href="demo.mp4">▶ Watch demo</a>
+  </video>
 </p>
 
 <p align="center">
@@ -33,7 +33,7 @@
 | Hook file corrupted | Re-inject hooks, restart session | **Silent background repair** |
 | `git checkout` triggers 50 events | AI goes haywire | **Mass-event suppressor** |
 | AI reads 8 large files (114KB) | **~28,600 tokens** consumed | **~860 tokens** via hologram (97% saved) |
-| Session token budget | Burns through context window | **~60,900 tokens saved per codebase scan** |
+| 5-day token budget | Burns through context window | **~1.4M tokens saved** (real measured data) |
 
 > `< 0.1% CPU` | `~40MB RAM` | `< 270ms` full heal cycle | You never even see it happen.
 
@@ -80,9 +80,12 @@ And every time it reads your codebase? Full source files pumped straight into th
 | **Fixed Port** | Daemon binds to `localhost:51831` — predictable address, no more random ports |
 | **Daemon Watchdog** | `daemonRequest()` retries 3× on transient failures — resilient to daemon restarts |
 
-### Web Dashboard Preview
+### Web Dashboard
 
-<!-- TODO: Replace with actual screenshot -->
+<p align="center">
+  <img src="dashboard.png" width="850" alt="afd dashboard — 5-day usage: 1.4M tokens saved, 83% compression" style="border-radius: 12px;">
+</p>
+
 > `afd web` — Opens `http://localhost:51831/dashboard` in your default browser.
 >
 > **Overview tab**: Today's token savings, lifetime ROI breakdown, 7-day history, live SSE event stream.
@@ -127,17 +130,27 @@ Function bodies are stripped, type signatures preserved. The AI gets the structu
 
 ## Token Savings — Real Measured Data
 
-The hologram system is afd's biggest value driver. Here's what we measured in a real session:
+The hologram system is afd's biggest value driver. Here's what we measured across real sessions:
 
-### Session Snapshot
+### 5-Day Usage (real dashboard data)
 
 | Metric | Value |
 |:-------|:------|
-| Hologram requests | 55 files analyzed |
-| Target files total size | ~290 KB (55 files, avg 5.3 KB each) |
-| Original token cost | ~72,500 tokens |
-| After hologram compression | ~11,600 tokens |
-| **Tokens saved** | **~60,900 tokens (84% reduction)** |
+| Compression rate | **83%** average |
+| Total tokens saved | **~1.4M tokens** |
+| Estimated cost saved | **$0.60+** per 5 days |
+| Hologram | 171.8K tok (12%) |
+| Workspace Map | 991.9K tok (72%) |
+| Pinpoint | 222.8K tok (16%) |
+
+### Single Session Snapshot (2 commands, fresh DB)
+
+| Metric | Value |
+|:-------|:------|
+| Compression rate | **95%** |
+| Original token cost | ~210.1K tokens |
+| After compression | ~11.2K tokens |
+| **Tokens saved** | **~198.9K tokens** |
 
 ### How It Scales
 
