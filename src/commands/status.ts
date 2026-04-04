@@ -3,6 +3,7 @@ import { join } from "path";
 import { getDaemonInfo, isDaemonAlive, daemonRequest } from "../daemon/client";
 import { resolveWorkspacePaths } from "../constants";
 import { getSystemLanguage } from "../core/locale";
+import { formatUptime } from "../core/boast";
 
 const C = {
   reset: "\x1b[0m",
@@ -63,13 +64,7 @@ function getQuarantinedFiles(): string[] {
   }
 }
 
-function formatUptime(seconds: number): string {
-  if (seconds < 60) return `${seconds}s`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  return `${h}h ${m}m`;
-}
+
 
 function indicator(ok: boolean): string {
   return ok ? `${C.green}●${C.reset}` : `${C.red}●${C.reset}`;

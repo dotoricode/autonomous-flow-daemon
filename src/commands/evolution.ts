@@ -9,6 +9,8 @@ import { evolve, analyzeQuarantine, listQuarantine } from "../core/evolution";
 import { generateValidators } from "../core/validator-generator";
 import type { ValidatorGenInput } from "../core/validator-generator";
 import { getSystemLanguage } from "../core/locale";
+import { visualWidth } from "../core/boast";
+import { createBox } from "../core/ui-box";
 
 const msgs = {
   en: {
@@ -47,24 +49,11 @@ const msgs = {
   },
 };
 
-const BOX = { tl: "┌", tr: "┐", bl: "└", br: "┘", h: "─", v: "│", ml: "├", mr: "┤" };
-const W = 58;
-
-function hline(l: string, r: string) { return `${l}${BOX.h.repeat(W)}${r}`; }
+const { hline } = createBox(58);
+const W_EVO = 58;
 function row(s: string) {
-  const pad = Math.max(0, W - 2 - visualWidth(s));
-  return `${BOX.v} ${s}${" ".repeat(pad)} ${BOX.v}`;
-}
-function visualWidth(s: string): number {
-  let w = 0;
-  for (const ch of s) {
-    const cp = ch.codePointAt(0)!;
-    if ((cp >= 0x1100 && cp <= 0x11ff) || (cp >= 0x2e80 && cp <= 0x9fff) ||
-        (cp >= 0xac00 && cp <= 0xd7af) || (cp >= 0xf900 && cp <= 0xfaff) ||
-        (cp >= 0x1f000 && cp <= 0x1faff) || (cp >= 0x20000 && cp <= 0x2fa1f)) w += 2;
-    else w += 1;
-  }
-  return w;
+  const pad = Math.max(0, W_EVO - 2 - visualWidth(s));
+  return `│ ${s}${" ".repeat(pad)} │`;
 }
 
 export async function evolutionCommand(opts: { generate?: boolean; suggest?: boolean; cross?: boolean; days?: string; min?: string; apply?: boolean; minScopes?: string; includeLocal?: boolean } = {}) {

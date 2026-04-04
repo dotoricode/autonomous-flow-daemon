@@ -8,6 +8,7 @@
 import { correlatePatterns } from "../core/correlation-engine";
 import { generateValidator } from "../core/validator-generator";
 import type { ValidatorGenInput } from "../core/validator-generator";
+import { createBox } from "../core/ui-box";
 import { initDb } from "../core/db";
 import { getSystemLanguage } from "../core/locale";
 
@@ -60,14 +61,7 @@ const msgs = {
   },
 };
 
-const BOX = { tl: "┌", tr: "┐", bl: "└", br: "┘", h: "─", v: "│", ml: "├", mr: "┤" };
-const W = 62;
-
-function hline(l: string, r: string) { return `${l}${BOX.h.repeat(W)}${r}`; }
-function row(s: string) {
-  const pad = Math.max(0, W - 2 - s.length);
-  return `${BOX.v} ${s}${" ".repeat(pad)} ${BOX.v}`;
-}
+const { hline, row } = createBox(62);
 
 export async function correlateCommand(opts: CorrelateOptions = {}) {
   const lang = getSystemLanguage();

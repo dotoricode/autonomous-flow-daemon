@@ -1,5 +1,5 @@
 import { getDaemonInfo, daemonRequest } from "../daemon/client";
-import { fmtNum, visualWidth } from "../core/boast";
+import { fmtNum, visualWidth, formatUptime } from "../core/boast";
 import { execSync } from "child_process";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -194,11 +194,6 @@ function formatK(chars: number): string {
   return `${Math.round(tok)} tok`;
 }
 
-function formatUptime(s: number): string {
-  if (s < 60) return `${s}s`;
-  if (s < 3600) return `${Math.floor(s / 60)}m ${s % 60}s`;
-  return `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`;
-}
 
 function weekday(dateStr: string, todayStr: string): string {
   if (dateStr === todayStr) return T.todayLabel;

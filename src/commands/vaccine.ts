@@ -19,6 +19,7 @@ import {
 } from "../core/vaccine-registry";
 import type { VaccinePackage } from "../core/vaccine-registry";
 import { getSystemLanguage } from "../core/locale";
+import { createBox } from "../core/ui-box";
 
 const msgs = {
   en: {
@@ -57,13 +58,7 @@ const msgs = {
   },
 };
 
-const BOX = { tl: "┌", tr: "┐", bl: "└", br: "┘", h: "─", v: "│", ml: "├", mr: "┤" };
-const W = 54;
-function hline(l: string, r: string) { return `${l}${BOX.h.repeat(W)}${r}`; }
-function row(s: string) {
-  const pad = Math.max(0, W - 2 - s.length);
-  return `${BOX.v} ${s}${" ".repeat(pad)} ${BOX.v}`;
-}
+const { hline, row } = createBox(54);
 
 export async function vaccineCommand(subcommand?: string, arg?: string) {
   const lang = getSystemLanguage();

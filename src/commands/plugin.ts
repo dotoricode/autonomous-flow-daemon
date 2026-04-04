@@ -9,6 +9,7 @@
 
 import { installPlugin, listPlugins, removePlugin } from "../core/plugin-manager";
 import { getSystemLanguage } from "../core/locale";
+import { createBox } from "../core/ui-box";
 
 const msgs = {
   en: {
@@ -31,13 +32,7 @@ const msgs = {
   },
 };
 
-const BOX = { tl: "┌", tr: "┐", bl: "└", br: "┘", h: "─", v: "│", ml: "├", mr: "┤" };
-const W = 58;
-function hline(l: string, r: string) { return `${l}${BOX.h.repeat(W)}${r}`; }
-function row(s: string) {
-  const pad = Math.max(0, W - 2 - s.length);
-  return `${BOX.v} ${s}${" ".repeat(pad)} ${BOX.v}`;
-}
+const { hline, row } = createBox(58);
 
 export async function pluginCommand(subcommand?: string, arg?: string) {
   const lang = getSystemLanguage();

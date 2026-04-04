@@ -1,39 +1,12 @@
-import { writeFileSync, mkdirSync, existsSync } from "fs";
-import { dirname } from "path";
-import { daemonRequest } from "../daemon/client";
-import type { Symptom, PatchOp, DiagnosisResult } from "../core/immune";
+import { daemonRequest, getDaemonPort } from "../daemon/client";
+import type { Symptom, DiagnosisResult } from "../core/immune";
+import { applyPatch } from "../core/patch-applier";
 
 const SEVERITY_ICON: Record<string, string> = {
   critical: "[!]",
   warning: "[~]",
   info: "[i]",
 };
-
-function applyPatch(patch: PatchOp): boolean {
-  // Map JSON-Patch path to filesystem path (strip leading /)
-  const filePath = patch.path.replace(/^\//, "");
-
-  // Guard: reject path traversal attempts
-  if (filePath.includes("..") || filePath.startsWith("/") || /^[A-Za-z]:/.test(filePath)) return false;
-
-  if (patch.op === "add") {
-    if (existsSync(filePath)) return false; // don't overwrite
-    const dir = dirname(filePath);
-    if (dir !== ".") mkdirSync(dir, { recursive: true });
-    writeFileSync(filePath, patch.value ?? "", "utf-8");
-    return true;
-  }
-
-  if (patch.op === "replace") {
-    const dir = dirname(filePath);
-    if (dir !== ".") mkdirSync(dir, { recursive: true });
-    writeFileSync(filePath, patch.value ?? "", "utf-8");
-    return true;
-  }
-
-  // remove, move, copy, test — not needed yet
-  return false;
-}
 
 async function learnAntibody(symptom: Symptom): Promise<void> {
   await fetch(
@@ -51,12 +24,6 @@ async function learnAntibody(symptom: Symptom): Promise<void> {
   );
 }
 
-async function getDaemonPort(): Promise<number> {
-  const { readFileSync } = await import("fs");
-  const { resolveWorkspacePaths } = await import("../constants");
-  const paths = resolveWorkspacePaths();
-  return parseInt(readFileSync(paths.portFile, "utf-8").trim(), 10);
-}
 
 export async function fixCommand(opts?: { deep?: boolean }) {
   // --deep: run full rule-based health analysis (previously `afd doctor --fix`)

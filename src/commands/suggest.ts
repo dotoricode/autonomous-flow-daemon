@@ -11,6 +11,7 @@ import { generateValidator } from "../core/validator-generator";
 import type { ValidatorGenInput } from "../core/validator-generator";
 import { initDb } from "../core/db";
 import { getSystemLanguage } from "../core/locale";
+import { createBox } from "../core/ui-box";
 import { existsSync, readFileSync } from "fs";
 
 interface SuggestOptions {
@@ -58,15 +59,7 @@ const msgs = {
   },
 };
 
-const BOX = { tl: "┌", tr: "┐", bl: "└", br: "┘", h: "─", v: "│", ml: "├", mr: "┤" };
-const W = 62;
-
-function hline(l: string, r: string) { return `${l}${BOX.h.repeat(W)}${r}`; }
-function row(s: string) {
-  // Simple padding — doesn't account for wide chars but good enough for ASCII
-  const pad = Math.max(0, W - 2 - s.length);
-  return `${BOX.v} ${s}${" ".repeat(pad)} ${BOX.v}`;
-}
+const { hline, row } = createBox(62);
 
 function formatDate(ts: number): string {
   const d = new Date(ts);

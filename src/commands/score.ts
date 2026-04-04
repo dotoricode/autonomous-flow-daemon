@@ -1,5 +1,5 @@
 import { daemonRequest } from "../daemon/client";
-import { fmtNum, visualWidth, localizedBoast } from "../core/boast";
+import { fmtNum, visualWidth, localizedBoast, formatUptime } from "../core/boast";
 import type { ShiftSummary } from "../core/boast";
 import { getSystemLanguage } from "../core/locale";
 import { getMessages, t } from "../core/i18n/messages";
@@ -88,13 +88,6 @@ const C = {
   bgYellow: "\x1b[43m",
 };
 
-function formatUptime(seconds: number): string {
-  if (seconds < 60) return `${seconds}s`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  return `${h}h ${m}m`;
-}
 
 function gaugeBar(value: number, max: number, width = 20): string {
   const ratio = Math.min(value / Math.max(max, 1), 1);

@@ -1,7 +1,6 @@
-import { writeFileSync, mkdirSync, existsSync } from "fs";
-import { dirname } from "path";
 import { daemonRequest, getDaemonInfo } from "../daemon/client";
-import type { Symptom, PatchOp, DiagnosisResult } from "../core/immune";
+import type { Symptom, DiagnosisResult } from "../core/immune";
+import { applyPatch } from "../core/patch-applier";
 import { notifyAutoHeal } from "../core/notify";
 
 interface DiagnoseOptions {
@@ -13,30 +12,6 @@ interface AutoHealResponse {
   status: string;
   healed: string[];
   skipped: string[];
-}
-
-function applyPatch(patch: PatchOp): boolean {
-  const filePath = patch.path.replace(/^\//, "");
-
-  // Guard: reject path traversal attempts
-  if (filePath.includes("..") || filePath.startsWith("/") || /^[A-Za-z]:/.test(filePath)) return false;
-
-  if (patch.op === "add") {
-    if (existsSync(filePath)) return false;
-    const dir = dirname(filePath);
-    if (dir !== ".") mkdirSync(dir, { recursive: true });
-    writeFileSync(filePath, patch.value ?? "", "utf-8");
-    return true;
-  }
-
-  if (patch.op === "replace") {
-    const dir = dirname(filePath);
-    if (dir !== ".") mkdirSync(dir, { recursive: true });
-    writeFileSync(filePath, patch.value ?? "", "utf-8");
-    return true;
-  }
-
-  return false;
 }
 
 export async function diagnoseCommand(opts: DiagnoseOptions) {

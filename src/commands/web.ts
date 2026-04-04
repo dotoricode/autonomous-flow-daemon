@@ -1,22 +1,25 @@
 import { getDaemonInfo, isDaemonAlive } from "../daemon/client";
 import { IS_WINDOWS, IS_MACOS } from "../platform";
 import { exec } from "child_process";
+import { getSystemLanguage } from "../core/locale";
+import { getMessages, t } from "../core/i18n/messages";
 
 export async function webCommand() {
+  const msg = getMessages(getSystemLanguage());
   const info = getDaemonInfo();
   if (!info) {
-    console.error("[afd] 데몬이 실행 중이 아닙니다. `afd start`를 먼저 실행하세요.");
+    console.error(msg.DAEMON_NOT_RUNNING);
     process.exit(1);
   }
 
   const alive = await isDaemonAlive(info);
   if (!alive) {
-    console.error("[afd] 데몬 프로세스가 응답하지 않습니다. `afd start --restart`를 시도하세요.");
+    console.error(msg.DAEMON_NOT_RESPONDING);
     process.exit(1);
   }
 
   const url = `http://localhost:${info.port}/dashboard`;
-  console.log(`[afd] 대시보드 열기: ${url}`);
+  console.log(t(msg.WEB_OPENING, { url }));
 
   const cmd = IS_WINDOWS ? `start "" "${url}"`
     : IS_MACOS ? `open "${url}"`
@@ -24,7 +27,7 @@ export async function webCommand() {
 
   exec(cmd, (err) => {
     if (err) {
-      console.error(`[afd] 브라우저 오픈 실패 — 직접 열어주세요: ${url}`);
+      console.error(t(msg.WEB_BROWSER_FAILED, { url }));
     }
   });
 }

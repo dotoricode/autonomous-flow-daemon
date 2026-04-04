@@ -1,8 +1,9 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { resolve, join } from "path";
-import { daemonRequest, getMeshPeers } from "../daemon/client";
+import { daemonRequest, getMeshPeers, getDaemonPort } from "../daemon/client";
 import { AFD_DIR } from "../constants";
 import { getSystemLanguage } from "../core/locale";
+import { BOX, createBox } from "../core/ui-box";
 import { resolveScope } from "../core/federation";
 import type { FederatedAntibody, FederatedPayload } from "../core/federation";
 
@@ -142,10 +143,7 @@ export async function syncCommand(opts: SyncOptions = {}) {
  * Conflict arbitration is handled by shouldAcceptRemote() on each daemon's side.
  */
 async function syncLocalMesh(m: typeof msgs.en) {
-  const BOX = { tl: "┌", tr: "┐", bl: "└", br: "┘", h: "─", v: "│", ml: "├", mr: "┤" };
-  const W = 60;
-  const hline = (l: string, r: string) => `${l}${BOX.h.repeat(W)}${r}`;
-  const row = (s: string) => `${BOX.v} ${s}${" ".repeat(Math.max(0, W - 2 - s.length))} ${BOX.v}`;
+  const { hline, row } = createBox(60);
 
   let peers: Awaited<ReturnType<typeof getMeshPeers>>;
   try {
@@ -308,7 +306,7 @@ async function syncRemotePush(url: string, m: typeof msgs.en) {
     process.exit(1);
   }
 
-  const BOX = { tl: "┌", tr: "┐", bl: "└", br: "┘", h: "─", v: "│", ml: "├", mr: "┤" };
+
   const W = 50;
   const line = (l: string, r: string) => `${l}${BOX.h.repeat(W)}${r}`;
   const row = (s: string) => `${BOX.v}  ${s}${" ".repeat(Math.max(0, W - 2 - s.length))}${BOX.v}`;
@@ -390,7 +388,7 @@ async function syncRemotePull(url: string, m: typeof msgs.en) {
     }
   }
 
-  const BOX = { tl: "┌", tr: "┐", bl: "└", br: "┘", h: "─", v: "│", ml: "├", mr: "┤" };
+
   const W = 50;
   const line = (l: string, r: string) => `${l}${BOX.h.repeat(W)}${r}`;
   const row = (s: string) => `${BOX.v}  ${s}${" ".repeat(Math.max(0, W - 2 - s.length))}${BOX.v}`;
@@ -483,7 +481,7 @@ async function syncPush(m: typeof msgs.en) {
 
   writeFileSync(TEAM_PAYLOAD_FILE, JSON.stringify(teamPayload, null, 2), "utf-8");
 
-  const BOX = { tl: "┌", tr: "┐", bl: "└", br: "┘", h: "─", v: "│", ml: "├", mr: "┤" };
+
   const W = 50;
   const line = (l: string, r: string) => `${l}${BOX.h.repeat(W)}${r}`;
   const row = (s: string) => `${BOX.v}  ${s}${" ".repeat(Math.max(0, W - 2 - s.length))}${BOX.v}`;
@@ -545,7 +543,7 @@ async function syncPull(m: typeof msgs.en) {
     }
   }
 
-  const BOX = { tl: "┌", tr: "┐", bl: "└", br: "┘", h: "─", v: "│", ml: "├", mr: "┤" };
+
   const W = 50;
   const line = (l: string, r: string) => `${l}${BOX.h.repeat(W)}${r}`;
   const row = (s: string) => `${BOX.v}  ${s}${" ".repeat(Math.max(0, W - 2 - s.length))}${BOX.v}`;
@@ -564,15 +562,9 @@ async function syncPull(m: typeof msgs.en) {
   console.log(line(BOX.bl, BOX.br));
 }
 
-function getDaemonPort(): number {
-  const { getDaemonInfo } = require("../daemon/client");
-  const info = getDaemonInfo();
-  if (!info) throw new Error("Daemon not running");
-  return info.port;
-}
 
 function renderPayloadBox(payload: VaccinePayload, m: typeof msgs.en) {
-  const BOX = { tl: "┌", tr: "┐", bl: "└", br: "┘", h: "─", v: "│", ml: "├", mr: "┤" };
+
   const W = 48;
   const line = (l: string, r: string) => `${l}${BOX.h.repeat(W)}${r}`;
   const row = (s: string) => `${BOX.v}  ${s}${" ".repeat(Math.max(0, W - 2 - s.length))}${BOX.v}`;

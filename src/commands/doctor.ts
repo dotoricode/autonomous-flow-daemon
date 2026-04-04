@@ -1,10 +1,11 @@
-import { writeFileSync, mkdirSync, existsSync } from "fs";
-import { dirname } from "path";
 import { loadAllRules, evaluateRules } from "../core/rule-engine";
 import type { DiagnosticRule } from "../core/rule-engine";
-import type { PatchOp, Symptom } from "../core/immune";
+import type { Symptom } from "../core/immune";
+import { applyPatch } from "../core/patch-applier";
 import { notifyAutoHeal } from "../core/notify";
 import { getSystemLanguage } from "../core/locale";
+import { BOX } from "../core/ui-box";
+import { visualWidth } from "../core/boast";
 
 interface DoctorOptions {
   fix?: boolean;
@@ -53,7 +54,6 @@ const msgs = {
 };
 
 // ── Box Drawing ──
-const BOX = { tl: "┌", tr: "┐", bl: "└", br: "┘", h: "─", v: "│", ml: "├", mr: "┤" };
 const W = 52;
 
 function line(left: string, right: string) {
@@ -68,28 +68,6 @@ function row(content: string) {
 
 function divider() {
   return line(BOX.ml, BOX.mr);
-}
-
-function visualWidth(s: string): number {
-  let w = 0;
-  for (const ch of s) {
-    const cp = ch.codePointAt(0)!;
-    // CJK + emoji ranges → width 2
-    if (
-      (cp >= 0x1100 && cp <= 0x11ff) ||
-      (cp >= 0x2e80 && cp <= 0x9fff) ||
-      (cp >= 0xac00 && cp <= 0xd7af) ||
-      (cp >= 0xf900 && cp <= 0xfaff) ||
-      (cp >= 0xfe30 && cp <= 0xfe4f) ||
-      (cp >= 0x1f000 && cp <= 0x1faff) ||
-      (cp >= 0x20000 && cp <= 0x2fa1f)
-    ) {
-      w += 2;
-    } else {
-      w += 1;
-    }
-  }
-  return w;
 }
 
 function kv(label: string, value: string) {
@@ -140,24 +118,6 @@ function getRecommendation(patternType: string, lang: "en" | "ko"): string {
 }
 
 // ── Patch Applier ──
-function applyPatch(patch: PatchOp): boolean {
-  const filePath = patch.path.replace(/^\//, "");
-  if (patch.op === "add") {
-    if (existsSync(filePath)) return false;
-    const dir = dirname(filePath);
-    if (dir !== ".") mkdirSync(dir, { recursive: true });
-    writeFileSync(filePath, patch.value ?? "", "utf-8");
-    return true;
-  }
-  if (patch.op === "replace") {
-    const dir = dirname(filePath);
-    if (dir !== ".") mkdirSync(dir, { recursive: true });
-    writeFileSync(filePath, patch.value ?? "", "utf-8");
-    return true;
-  }
-  return false;
-}
-
 // ── Main Command ──
 export async function doctorCommand(opts: DoctorOptions) {
   const lang = getSystemLanguage();
