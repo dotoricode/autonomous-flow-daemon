@@ -115,8 +115,13 @@ export const ClaudeCodeAdapter: EcosystemAdapter = {
   },
   registerMcp(cwd: string): { registered: boolean; message: string } {
     const mcpPath = join(cwd, ".mcp.json");
-    const serverScript = "src/daemon/server.ts";
-    const expectedArgs = ["run", serverScript, "--mcp"];
+
+    // Dev mode: cwd is the afd source tree itself
+    const isDevMode = existsSync(join(cwd, "src/daemon/server.ts"));
+    const command = isDevMode ? "bun" : "npx";
+    const expectedArgs = isDevMode
+      ? ["run", "src/daemon/server.ts", "--mcp"]
+      : ["-y", "@dotoricode/afd", "start", "--mcp"];
 
     let config: Record<string, unknown>;
     if (existsSync(mcpPath)) {
@@ -132,15 +137,12 @@ export const ClaudeCodeAdapter: EcosystemAdapter = {
     const mcpServers = (config.mcpServers ?? {}) as Record<string, unknown>;
     const existing = mcpServers.afd as { command?: string; args?: string[] } | undefined;
 
-    if (existing?.command === "bun" &&
+    if (existing?.command === command &&
         JSON.stringify(existing.args) === JSON.stringify(expectedArgs)) {
       return { registered: false, message: "MCP server already registered in .mcp.json" };
     }
 
-    mcpServers.afd = {
-      command: "bun",
-      args: expectedArgs,
-    };
+    mcpServers.afd = { command, args: expectedArgs };
     config.mcpServers = mcpServers;
     writeFileSync(mcpPath, JSON.stringify(config, null, 2), "utf-8");
     return { registered: true, message: "MCP server 'afd' registered in .mcp.json" };

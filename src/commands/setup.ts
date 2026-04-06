@@ -1,7 +1,7 @@
 /**
- * afd setup — Interactive one-command setup for any project.
+ * afd setup — Zero-interaction one-command setup for any project.
  *
- * Steps (each asks for user confirmation):
+ * Steps (all auto-confirmed):
  *   1. Start daemon
  *   2. Register MCP server (.mcp.json)
  *   3. Inject CLAUDE.md afd instructions
@@ -9,8 +9,7 @@
  */
 
 import { existsSync, readFileSync, writeFileSync } from "fs";
-import { resolve, join } from "path";
-import { createInterface } from "readline";
+import { resolve } from "path";
 import { getSystemLanguage } from "../core/locale";
 import { platform } from "os";
 
@@ -18,28 +17,24 @@ import { platform } from "os";
 
 const msgs = {
   en: {
-    welcome: "afd setup — Interactive project configuration",
-    stepDaemon: "Start afd daemon",
-    stepMcp: "Register MCP server (.mcp.json)",
-    stepClaude: "Add afd instructions to CLAUDE.md",
-    stepFix: "Run health check (afd fix)",
-    confirm: (step: string) => `  → ${step}? [Y/n] `,
-    skip: (step: string) => `  ✗ Skipped: ${step}`,
-    done: (step: string) => `  ✓ Done: ${step}`,
+    welcome: "afd setup — configuring your project",
+    stepDaemon: "Starting daemon",
+    stepMcp: "Registering MCP server (.mcp.json)",
+    stepClaude: "Adding afd instructions to CLAUDE.md",
+    stepFix: "Running health check",
+    done: (step: string) => `  ✓ ${step}`,
     already: (step: string) => `  · Already configured: ${step}`,
     allDone: "\nafd setup complete. Your project is protected.",
     hintDashboard: "  Run 'afd web' to see live token savings in your browser.",
     hintRestart: "  Run /mcp in Claude Code to connect (no restart needed).",
   },
   ko: {
-    welcome: "afd setup — 대화형 프로젝트 설정",
-    stepDaemon: "afd 데몬 시작",
+    welcome: "afd setup — 프로젝트 설정 중",
+    stepDaemon: "데몬 시작",
     stepMcp: "MCP 서버 등록 (.mcp.json)",
     stepClaude: "CLAUDE.md에 afd 지시 추가",
-    stepFix: "상태 점검 실행 (afd fix)",
-    confirm: (step: string) => `  → ${step} 진행할까요? [Y/n] `,
-    skip: (step: string) => `  ✗ 건너뜀: ${step}`,
-    done: (step: string) => `  ✓ 완료: ${step}`,
+    stepFix: "상태 점검 실행",
+    done: (step: string) => `  ✓ ${step}`,
     already: (step: string) => `  · 이미 설정됨: ${step}`,
     allDone: "\nafd setup 완료. 프로젝트가 보호됩니다.",
     hintDashboard: "  'afd web'으로 브라우저에서 실시간 토큰 절약량을 확인하세요.",
@@ -47,18 +42,7 @@ const msgs = {
   },
 };
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-function ask(rl: ReturnType<typeof createInterface>, question: string): Promise<boolean> {
-  return new Promise((resolve) => {
-    rl.question(question, (answer) => {
-      const trimmed = answer.trim().toLowerCase();
-      resolve(trimmed === "" || trimmed === "y" || trimmed === "yes");
-    });
-  });
-}
-
-// ── MCP registration (inline — no circular import) ──────────────────────────
+// ── MCP registration ──────────────────────────────────────────────────────────
 
 interface McpConfig {
   mcpServers?: Record<string, unknown>;
@@ -93,7 +77,7 @@ function registerMcp(filePath: string): "done" | "already" {
   return "done";
 }
 
-// ── CLAUDE.md injection ─────────────────────────────────────────────────────
+// ── CLAUDE.md injection ───────────────────────────────────────────────────────
 
 const AFD_MARKER = "<!-- afd:setup -->";
 
@@ -125,7 +109,7 @@ function injectClaudeMd(cwd: string): "done" | "already" {
   return "done";
 }
 
-// ── Main ────────────────────────────────────────────────────────────────────
+// ── Main ──────────────────────────────────────────────────────────────────────
 
 export async function setupCommand(): Promise<void> {
   const lang = getSystemLanguage();
@@ -134,55 +118,41 @@ export async function setupCommand(): Promise<void> {
 
   console.log(`\n  ${m.welcome}\n`);
 
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-
-  try {
-    // Step 1: Start daemon
-    if (await ask(rl, m.confirm(m.stepDaemon))) {
-      const { getDaemonInfo, isDaemonAlive } = await import("../daemon/client");
-      const info = getDaemonInfo();
-      if (info && await isDaemonAlive(info)) {
-        console.log(m.already(m.stepDaemon));
-      } else {
-        const { startCommand } = await import("./start");
-        await startCommand({});
-        console.log(m.done(m.stepDaemon));
-      }
+  // Step 1: Start daemon
+  {
+    const { getDaemonInfo, isDaemonAlive } = await import("../daemon/client");
+    const info = getDaemonInfo();
+    if (info && await isDaemonAlive(info)) {
+      console.log(m.already(m.stepDaemon));
     } else {
-      console.log(m.skip(m.stepDaemon));
+      const { startCommand } = await import("./start");
+      await startCommand({});
+      console.log(m.done(m.stepDaemon));
     }
-
-    // Step 2: MCP registration
-    if (await ask(rl, m.confirm(m.stepMcp))) {
-      const mcpPath = resolve(cwd, ".mcp.json");
-      const result = registerMcp(mcpPath);
-      console.log(result === "already" ? m.already(m.stepMcp) : m.done(m.stepMcp));
-    } else {
-      console.log(m.skip(m.stepMcp));
-    }
-
-    // Step 3: CLAUDE.md injection
-    if (await ask(rl, m.confirm(m.stepClaude))) {
-      const result = injectClaudeMd(cwd);
-      console.log(result === "already" ? m.already(m.stepClaude) : m.done(m.stepClaude));
-    } else {
-      console.log(m.skip(m.stepClaude));
-    }
-
-    // Step 4: Health check
-    if (await ask(rl, m.confirm(m.stepFix))) {
-      const { fixCommand } = await import("./fix");
-      await fixCommand({});
-      console.log(m.done(m.stepFix));
-    } else {
-      console.log(m.skip(m.stepFix));
-    }
-
-    console.log(m.allDone);
-    console.log(m.hintDashboard);
-    console.log(m.hintRestart);
-    console.log("");
-  } finally {
-    rl.close();
   }
+
+  // Step 2: MCP registration
+  {
+    const mcpPath = resolve(cwd, ".mcp.json");
+    const result = registerMcp(mcpPath);
+    console.log(result === "already" ? m.already(m.stepMcp) : m.done(m.stepMcp));
+  }
+
+  // Step 3: CLAUDE.md injection
+  {
+    const result = injectClaudeMd(cwd);
+    console.log(result === "already" ? m.already(m.stepClaude) : m.done(m.stepClaude));
+  }
+
+  // Step 4: Health check
+  {
+    const { fixCommand } = await import("./fix");
+    await fixCommand({ autoApply: true });
+    console.log(m.done(m.stepFix));
+  }
+
+  console.log(m.allDone);
+  console.log(m.hintDashboard);
+  console.log(m.hintRestart);
+  console.log("");
 }

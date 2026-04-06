@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1775321395548,
-  "projectRoot": "D:\\00_work\\autonomous-flow-daemon",
+  "lastScanned": 1775457674583,
+  "projectRoot": "/Users/youngsang.kwon/01_private/autonomous-flow-daemon",
   "techStack": {
     "languages": [
       {
@@ -57,7 +57,7 @@
       "path": "bench",
       "purpose": null,
       "fileCount": 1,
-      "lastAccessed": 1775321395407,
+      "lastAccessed": 1775457674505,
       "keyFiles": [
         "run-all.ts"
       ]
@@ -66,45 +66,27 @@
       "path": "bin",
       "purpose": "Executable scripts",
       "fileCount": 1,
-      "lastAccessed": 1775321395408,
+      "lastAccessed": 1775457674506,
       "keyFiles": [
         "afd.cjs"
-      ]
-    },
-    "dist": {
-      "path": "dist",
-      "purpose": "Distribution/build output",
-      "fileCount": 1,
-      "lastAccessed": 1775321395424,
-      "keyFiles": [
-        "cli.js"
       ]
     },
     "docs": {
       "path": "docs",
       "purpose": "Documentation",
       "fileCount": 3,
-      "lastAccessed": 1775321395426,
+      "lastAccessed": 1775457674527,
       "keyFiles": [
         "INDEX.md",
         "roadmap.md",
         "troubleshooting.md"
       ]
     },
-    "nul": {
-      "path": "nul",
-      "purpose": null,
-      "fileCount": 1,
-      "lastAccessed": 1775321395426,
-      "keyFiles": [
-        "cli.js"
-      ]
-    },
     "scripts": {
       "path": "scripts",
       "purpose": "Build/utility scripts",
       "fileCount": 3,
-      "lastAccessed": 1775321395439,
+      "lastAccessed": 1775457674529,
       "keyFiles": [
         "afd-status.ts",
         "hologram-bench.ts",
@@ -115,7 +97,7 @@
       "path": "src",
       "purpose": "Source code",
       "fileCount": 4,
-      "lastAccessed": 1775321395440,
+      "lastAccessed": 1775457674530,
       "keyFiles": [
         "cli.ts",
         "constants.ts",
@@ -126,8 +108,8 @@
     "test": {
       "path": "test",
       "purpose": "Test files",
-      "fileCount": 639,
-      "lastAccessed": 1775321395461,
+      "fileCount": 8,
+      "lastAccessed": 1775457674531,
       "keyFiles": [
         "correlation-engine.test.ts",
         "event-batcher.test.ts",
@@ -140,275 +122,28 @@
       "path": "tests",
       "purpose": "Test files",
       "fileCount": 0,
-      "lastAccessed": 1775321395462,
+      "lastAccessed": 1775457674531,
       "keyFiles": []
     },
-    "docs\\spec": {
-      "path": "docs\\spec",
+    "docs/spec": {
+      "path": "docs/spec",
       "purpose": "Test specifications",
       "fileCount": 3,
-      "lastAccessed": 1775321395464,
+      "lastAccessed": 1775457674532,
       "keyFiles": [
         "architecture.md",
         "cli.md",
         "mcp.md"
       ]
     },
-    "tests\\fixtures": {
-      "path": "tests\\fixtures",
+    "tests/fixtures": {
+      "path": "tests/fixtures",
       "purpose": "Test fixtures",
       "fileCount": 0,
-      "lastAccessed": 1775321395472,
+      "lastAccessed": 1775457674539,
       "keyFiles": []
     }
   },
-  "hotPaths": [
-    {
-      "path": "src\\commands\\doctor.ts",
-      "accessCount": 17,
-      "lastAccessed": 1775322646382,
-      "type": "file"
-    },
-    {
-      "path": "src\\commands\\sync.ts",
-      "accessCount": 17,
-      "lastAccessed": 1775322744582,
-      "type": "file"
-    },
-    {
-      "path": "src",
-      "accessCount": 14,
-      "lastAccessed": 1775321771936,
-      "type": "directory"
-    },
-    {
-      "path": "README.md",
-      "accessCount": 11,
-      "lastAccessed": 1775331551754,
-      "type": "file"
-    },
-    {
-      "path": "src\\core\\i18n\\messages.ts",
-      "accessCount": 10,
-      "lastAccessed": 1775325521941,
-      "type": "directory"
-    },
-    {
-      "path": "src\\commands",
-      "accessCount": 9,
-      "lastAccessed": 1775322290722,
-      "type": "directory"
-    },
-    {
-      "path": "src\\daemon\\server.ts",
-      "accessCount": 9,
-      "lastAccessed": 1775323816893,
-      "type": "file"
-    },
-    {
-      "path": "README-ko.md",
-      "accessCount": 8,
-      "lastAccessed": 1775331251055,
-      "type": "directory"
-    },
-    {
-      "path": "src\\commands\\dashboard.ts",
-      "accessCount": 7,
-      "lastAccessed": 1775322601535,
-      "type": "file"
-    },
-    {
-      "path": "src\\commands\\evolution.ts",
-      "accessCount": 7,
-      "lastAccessed": 1775322676943,
-      "type": "file"
-    },
-    {
-      "path": "src\\commands\\fix.ts",
-      "accessCount": 7,
-      "lastAccessed": 1775322726584,
-      "type": "file"
-    },
-    {
-      "path": "CLAUDE.md",
-      "accessCount": 7,
-      "lastAccessed": 1775325488637,
-      "type": "file"
-    },
-    {
-      "path": "src\\commands\\correlate.ts",
-      "accessCount": 5,
-      "lastAccessed": 1775322351258,
-      "type": "file"
-    },
-    {
-      "path": "src\\commands\\vaccine.ts",
-      "accessCount": 5,
-      "lastAccessed": 1775322393634,
-      "type": "file"
-    },
-    {
-      "path": "src\\commands\\plugin.ts",
-      "accessCount": 5,
-      "lastAccessed": 1775322397626,
-      "type": "file"
-    },
-    {
-      "path": "src\\commands\\suggest.ts",
-      "accessCount": 5,
-      "lastAccessed": 1775322400950,
-      "type": "file"
-    },
-    {
-      "path": "src\\core\\hologram\\ts-extractor.ts",
-      "accessCount": 5,
-      "lastAccessed": 1775322534880,
-      "type": "file"
-    },
-    {
-      "path": "src\\core\\boast.ts",
-      "accessCount": 5,
-      "lastAccessed": 1775322559584,
-      "type": "directory"
-    },
-    {
-      "path": "src\\commands\\score.ts",
-      "accessCount": 5,
-      "lastAccessed": 1775322588509,
-      "type": "file"
-    },
-    {
-      "path": "src\\daemon\\http-routes.ts",
-      "accessCount": 5,
-      "lastAccessed": 1775323806442,
-      "type": "file"
-    },
-    {
-      "path": "src\\commands\\status.ts",
-      "accessCount": 4,
-      "lastAccessed": 1775322574280,
-      "type": "file"
-    },
-    {
-      "path": "src\\daemon\\mcp-handler.ts",
-      "accessCount": 4,
-      "lastAccessed": 1775331554296,
-      "type": "file"
-    },
-    {
-      "path": "src\\commands\\diagnose.ts",
-      "accessCount": 3,
-      "lastAccessed": 1775322246545,
-      "type": "file"
-    },
-    {
-      "path": "src\\commands\\web.ts",
-      "accessCount": 3,
-      "lastAccessed": 1775325531030,
-      "type": "directory"
-    },
-    {
-      "path": "src\\daemon",
-      "accessCount": 3,
-      "lastAccessed": 1775331554572,
-      "type": "directory"
-    },
-    {
-      "path": "src\\core\\hologram\\go-extractor.ts",
-      "accessCount": 2,
-      "lastAccessed": 1775322516441,
-      "type": "file"
-    },
-    {
-      "path": "src\\core\\hologram\\rust-extractor.ts",
-      "accessCount": 2,
-      "lastAccessed": 1775322517539,
-      "type": "file"
-    },
-    {
-      "path": "src\\daemon\\client.ts",
-      "accessCount": 2,
-      "lastAccessed": 1775322706776,
-      "type": "file"
-    },
-    {
-      "path": "src\\core\\db.ts",
-      "accessCount": 2,
-      "lastAccessed": 1775323380462,
-      "type": "file"
-    },
-    {
-      "path": "src\\core\\locale.ts",
-      "accessCount": 2,
-      "lastAccessed": 1775325433832,
-      "type": "directory"
-    },
-    {
-      "path": "src\\constants.ts",
-      "accessCount": 2,
-      "lastAccessed": 1775325826156,
-      "type": "directory"
-    },
-    {
-      "path": "src\\adapters\\index.ts",
-      "accessCount": 1,
-      "lastAccessed": 1775321708674,
-      "type": "file"
-    },
-    {
-      "path": "src\\core\\immune.ts",
-      "accessCount": 1,
-      "lastAccessed": 1775322225608,
-      "type": "file"
-    },
-    {
-      "path": "src\\core\\patch-applier.ts",
-      "accessCount": 1,
-      "lastAccessed": 1775322232144,
-      "type": "file"
-    },
-    {
-      "path": "src\\core\\ui-box.ts",
-      "accessCount": 1,
-      "lastAccessed": 1775322328973,
-      "type": "file"
-    },
-    {
-      "path": "src\\core\\hologram",
-      "accessCount": 1,
-      "lastAccessed": 1775322491916,
-      "type": "directory"
-    },
-    {
-      "path": "src\\core\\hologram\\utils.ts",
-      "accessCount": 1,
-      "lastAccessed": 1775322509808,
-      "type": "file"
-    },
-    {
-      "path": "src\\commands\\lang.ts",
-      "accessCount": 1,
-      "lastAccessed": 1775325152751,
-      "type": "file"
-    },
-    {
-      "path": "src\\core",
-      "accessCount": 1,
-      "lastAccessed": 1775325445669,
-      "type": "directory"
-    },
-    {
-      "path": "package.json",
-      "accessCount": 1,
-      "lastAccessed": 1775330941460,
-      "type": "file"
-    },
-    {
-      "path": "dashboard.png",
-      "accessCount": 1,
-      "lastAccessed": 1775331168676,
-      "type": "file"
-    }
-  ],
+  "hotPaths": [],
   "userDirectives": []
 }

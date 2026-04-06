@@ -25,7 +25,7 @@ async function learnAntibody(symptom: Symptom): Promise<void> {
 }
 
 
-export async function fixCommand(opts?: { deep?: boolean }) {
+export async function fixCommand(opts?: { deep?: boolean; autoApply?: boolean }) {
   // --deep: run full rule-based health analysis (previously `afd doctor --fix`)
   if (opts?.deep) {
     const { doctorCommand } = await import("./doctor");
@@ -86,13 +86,14 @@ export async function fixCommand(opts?: { deep?: boolean }) {
   console.log(JSON.stringify(allPatches, null, 2));
   console.log();
 
-  // Prompt user
-  process.stdout.write("Apply these fixes? [Y/n] ");
-  const answer = await readLine();
-
-  if (answer.toLowerCase() === "n") {
-    console.log("[afd fix] Aborted.");
-    return;
+  // Prompt user (skip if autoApply)
+  if (!opts?.autoApply) {
+    process.stdout.write("Apply these fixes? [Y/n] ");
+    const answer = await readLine();
+    if (answer.toLowerCase() === "n") {
+      console.log("[afd fix] Aborted.");
+      return;
+    }
   }
 
   // Apply patches and learn antibodies
