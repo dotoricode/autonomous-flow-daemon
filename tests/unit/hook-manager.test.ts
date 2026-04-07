@@ -297,8 +297,8 @@ describe("getHookSummary", () => {
 // ── KNOWN_AFD_HOOKS safety ────────────────────────────────────────────────────
 
 describe("KNOWN_AFD_HOOKS removal safety", () => {
-  test("afd-read-gate is NOT in KNOWN_AFD_HOOKS (user script, preserved on stop)", () => {
-    expect(KNOWN_AFD_HOOKS.has("afd-read-gate")).toBe(false);
+  test("afd-read-gate IS in KNOWN_AFD_HOOKS as an optional afd hook", () => {
+    expect(KNOWN_AFD_HOOKS.has("afd-read-gate")).toBe(true);
   });
 
   test("afd-auto-heal IS in KNOWN_AFD_HOOKS (managed by afd, removed on stop)", () => {

@@ -44,20 +44,103 @@ export interface HookSummary {
 }
 
 /**
- * Canonical set of afd-managed hooks.
- * Only hooks in this set are removed during `stop --clean`.
- * This prevents accidental deletion of user hooks with an `afd-` prefix
- * (e.g., project-local `afd-read-gate` scripts).
+ * Required afd hooks — auto-installed, removed on clean.
  */
-export const KNOWN_AFD_HOOKS = new Set(["afd-auto-heal"]);
+export const REQUIRED_AFD_HOOKS = new Set(["afd-auto-heal"]);
 
-/** afd's canonical desired hooks — authoritative source for merge. */
+/**
+ * Optional afd hooks — user-confirmed during setup, preserved once installed.
+ */
+export const OPTIONAL_AFD_HOOKS = new Set(["afd-read-gate"]);
+
+/**
+ * Canonical set of all afd-managed hooks.
+ * Only hooks in this set are removed during `stop --clean`.
+ */
+export const KNOWN_AFD_HOOKS = new Set([...REQUIRED_AFD_HOOKS, ...OPTIONAL_AFD_HOOKS]);
+
+/** afd's canonical desired hooks — authoritative source for merge (required only). */
 export function getAfdDesiredHooks(): HookEntry[] {
   return [
     {
       id: "afd-auto-heal",
       matcher: "Write|Edit|MultiEdit",
       command: resolveHookCommand(),
+    },
+  ];
+}
+
+/** Bash script content for the read-gate hook. */
+export const READ_GATE_SCRIPT = `#!/bin/bash
+# afd Read Gate — redirect large file reads to afd_read MCP tool
+# PreToolUse hook: blocks native Read for files >=10KB, suggests afd_read
+
+set -euo pipefail
+
+INPUT=$(cat)
+TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty')
+
+# Only intercept Read tool calls
+if [[ "$TOOL_NAME" != "Read" ]]; then
+  exit 0
+fi
+
+FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+
+# Skip if no file path or file doesn't exist
+if [[ -z "$FILE_PATH" || ! -f "$FILE_PATH" ]]; then
+  exit 0
+fi
+
+# Skip non-code files (images, PDFs, etc.)
+case "$FILE_PATH" in
+  *.png|*.jpg|*.jpeg|*.gif|*.svg|*.ico|*.pdf|*.ipynb) exit 0 ;;
+esac
+
+# Check file size (10KB threshold)
+FILE_SIZE=$(wc -c < "$FILE_PATH" 2>/dev/null || echo 0)
+THRESHOLD=10240
+
+if [[ "$FILE_SIZE" -ge "$THRESHOLD" ]]; then
+  SIZE_KB=$(( FILE_SIZE / 1024 ))
+  cat <<EOF
+{
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "deny",
+    "permissionDecisionReason": "This file is \${SIZE_KB}KB (>= 10KB). Use mcp__afd__afd_read tool instead for token-efficient reading. It returns a hologram (type skeleton) for large files, saving 80%+ tokens. For specific sections, pass startLine/endLine parameters."
+  }
+}
+EOF
+  exit 0
+fi
+
+# Small file — allow native Read
+exit 0
+`;
+
+export interface OptionalHookDef {
+  hook: HookEntry;
+  scriptContent?: string;
+  scriptPath?: string;
+  description: { en: string; ko: string };
+}
+
+/** afd's optional hooks — shown during setup for user confirmation. */
+export function getAfdOptionalHooks(): OptionalHookDef[] {
+  return [
+    {
+      hook: {
+        id: "afd-read-gate",
+        matcher: "Read",
+        command: "bash .claude/read-gate.sh",
+      },
+      scriptContent: READ_GATE_SCRIPT,
+      scriptPath: "read-gate.sh",
+      description: {
+        en: "Block native Read for files >=10KB, redirect to afd_read (saves 80%+ tokens)",
+        ko: "10KB 이상 파일의 네이티브 Read를 차단하고 afd_read로 유도 (80%+ 토큰 절약)",
+      },
     },
   ];
 }
@@ -172,16 +255,23 @@ export function mergeHooks(
   const omcHooks = zones.get("omc")!;
   const userHooks = zones.get("user")!;
 
-  // Build merged afd zone from desired list (authoritative)
+  // Build merged afd zone from desired list (authoritative for required hooks)
   const mergedAfd: HookEntry[] = desiredAfd.map(desired => {
     const existing = afdExisting.find(h => h.id === desired.id);
     if (!existing) changes.added.push(desired.id!);
     return desired;
   });
 
-  // Track explicitly removed afd hooks (only canonical ones)
+  // Preserve optional hooks already installed (do not remove them during sync)
   for (const existing of afdExisting) {
-    if (KNOWN_AFD_HOOKS.has(existing.id) && !desiredAfd.find(d => d.id === existing.id)) {
+    if (OPTIONAL_AFD_HOOKS.has(existing.id) && !mergedAfd.find(h => h.id === existing.id)) {
+      mergedAfd.push({ id: existing.id, matcher: existing.matcher, command: existing.command });
+    }
+  }
+
+  // Track explicitly removed required afd hooks only
+  for (const existing of afdExisting) {
+    if (REQUIRED_AFD_HOOKS.has(existing.id) && !desiredAfd.find(d => d.id === existing.id)) {
       changes.removed.push(existing.id);
     }
   }

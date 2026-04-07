@@ -8,8 +8,8 @@
  *   4. Run afd fix (health check)
  */
 
-import { existsSync, readFileSync, writeFileSync } from "fs";
-import { resolve } from "path";
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
+import { resolve, dirname } from "path";
 import { getSystemLanguage } from "../core/locale";
 import { platform } from "os";
 
@@ -22,8 +22,13 @@ const msgs = {
     stepMcp: "Registering MCP server (.mcp.json)",
     stepClaude: "Adding afd instructions to CLAUDE.md",
     stepFix: "Running health check",
+    stepOptionalHooks: "Optional hooks",
     done: (step: string) => `  ✓ ${step}`,
     already: (step: string) => `  · Already configured: ${step}`,
+    optionalHookPrompt: "Install optional hooks for better token optimization?",
+    optionalHookItem: (desc: string) => `    • ${desc}`,
+    optionalHookAccepted: "  ✓ Optional hooks installed",
+    optionalHookSkipped: "  · Skipped optional hooks",
     allDone: "\nafd setup complete. Your project is protected.",
     hintDashboard: "  Run 'afd web' to see live token savings in your browser.",
     hintRestart: "  Run /mcp in Claude Code to connect (no restart needed).",
@@ -34,8 +39,13 @@ const msgs = {
     stepMcp: "MCP 서버 등록 (.mcp.json)",
     stepClaude: "CLAUDE.md에 afd 지시 추가",
     stepFix: "상태 점검 실행",
+    stepOptionalHooks: "선택 훅 설치",
     done: (step: string) => `  ✓ ${step}`,
     already: (step: string) => `  · 이미 설정됨: ${step}`,
+    optionalHookPrompt: "토큰 최적화를 위한 선택 훅을 설치할까요?",
+    optionalHookItem: (desc: string) => `    • ${desc}`,
+    optionalHookAccepted: "  ✓ 선택 훅 설치 완료",
+    optionalHookSkipped: "  · 선택 훅 건너뜀",
     allDone: "\nafd setup 완료. 프로젝트가 보호됩니다.",
     hintDashboard: "  'afd web'으로 브라우저에서 실시간 토큰 절약량을 확인하세요.",
     hintRestart: "  Claude Code에서 /mcp를 실행하면 바로 연결됩니다 (재시작 불필요).",
@@ -149,6 +159,46 @@ export async function setupCommand(): Promise<void> {
     const { fixCommand } = await import("./fix");
     await fixCommand({ autoApply: true });
     console.log(m.done(m.stepFix));
+  }
+
+  // Step 5: Optional hooks (user confirmation required)
+  {
+    const { getAfdOptionalHooks, getAfdDesiredHooks, readHooksFile, writeHooksFile, mergeHooks } =
+      await import("../core/hook-manager");
+    const optionalHooks = getAfdOptionalHooks();
+
+    if (optionalHooks.length > 0) {
+      console.log(`\n  ${m.optionalHookPrompt}`);
+      for (const oh of optionalHooks) {
+        console.log(m.optionalHookItem(lang === "ko" ? oh.description.ko : oh.description.en));
+      }
+
+      const answer = prompt("  [Y/n] ") ?? "y";
+
+      if (answer.trim().toLowerCase() !== "n") {
+        for (const oh of optionalHooks) {
+          if (oh.scriptContent && oh.scriptPath) {
+            const scriptFullPath = resolve(cwd, ".claude", oh.scriptPath);
+            mkdirSync(dirname(scriptFullPath), { recursive: true });
+            writeFileSync(scriptFullPath, oh.scriptContent, { mode: 0o755 });
+          }
+        }
+
+        const hooksPath = resolve(cwd, ".claude", "hooks.json");
+        const config = readHooksFile(hooksPath);
+        if (!config.hooks) config.hooks = {};
+        if (!config.hooks.PreToolUse) config.hooks.PreToolUse = [];
+
+        const allDesired = [...getAfdDesiredHooks(), ...optionalHooks.map(oh => oh.hook)];
+        const result = mergeHooks(config.hooks.PreToolUse, allDesired);
+        config.hooks.PreToolUse = result.merged;
+        writeHooksFile(hooksPath, config);
+
+        console.log(m.optionalHookAccepted);
+      } else {
+        console.log(m.optionalHookSkipped);
+      }
+    }
   }
 
   console.log(m.allDone);
